@@ -10,13 +10,15 @@ import { JwtAccessModule } from './auth/jwt-modules/jwt-access.module';
 import { createConnection } from 'typeorm';
 import { MailModule } from './mail/mail.module';
 import { HelperModule } from './helper/helper.module';
+import { TaskModule } from './task/task.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAccessAuthGuard } from './auth/guard/jwt-access-auth.guard';
+import { CategoryModule } from './category/category.module';
 
 @Global()
 @Module({
   imports: [
-    AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
-    UserModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -41,12 +43,22 @@ import { HelperModule } from './helper/helper.module';
         return connection;
       },
     }),
+    AuthModule,
+    UserModule,
     JwtRefreshModule,
     JwtAccessModule,
     MailModule,
     HelperModule,
+    TaskModule,
+    CategoryModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAccessAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

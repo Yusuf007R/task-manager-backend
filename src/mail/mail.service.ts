@@ -11,7 +11,7 @@ export class MailService {
   async sendVerificationCode(email: string, code: string) {
     const msg = {
       to: email,
-      from: 'yusufmaster7@gmail.com',
+      from: this.configService.get('SEND_GRID_EMAIL'),
       subject: 'Verification Code task manager',
       text: `Your verification code is: ${code}`,
       html: `<strong>Your verification code is: ${code}</strong>`,
