@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { HelperService } from 'src/helper/helper.service';
 import { User } from 'src/user/entity/user.entity';
-import { Between, FindManyOptions, FindOneOptions, Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { FilterQueryDto } from './dto/filter-query.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -12,6 +13,7 @@ export class CategoryService {
   constructor(
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
+    private helperService: HelperService,
   ) {}
   async create(createCategoryDto: CreateCategoryDto, user: User) {
     const category = this.categoryRepository.create(createCategoryDto);
@@ -36,35 +38,38 @@ export class CategoryService {
   }
 
   async findAllQuery(queries: FilterQueryDto, userId: string) {
-    const where: FindOneOptions<Category>['where'] = { userId };
+    const skip = (queries.page - 1) * queries.limit || undefined;
 
-    if (queries.endDate && queries.startDate)
-      where[queries.dateType] = Between(queries.startDate, queries.endDate);
+    const take = queries.limit || undefined;
 
-    const skip: FindManyOptions<Category>['skip'] =
-      (queries.page - 1) * queries.limit || undefined;
-
-    const take: FindManyOptions<Category>['take'] = queries.limit || undefined;
-
-    const order: FindOneOptions<Category>['order'] = queries.orderBy &&
+    const order = queries.orderBy &&
       queries.orderDirection && {
-        [queries.orderBy]: queries.orderDirection,
+        [`category.${queries.orderBy}`]: queries.orderDirection,
       };
 
+    const query = this.categoryRepository
+      .createQueryBuilder('category')
+      .skip(skip)
+      .take(take)
+      .orderBy(order)
+      .andWhere('category.userId = :userId', { userId });
+    if (queries.endDate && queries.startDate)
+      query.andWhere({
+        [queries.dateType]: Between(queries.startDate, queries.endDate),
+      });
     if (queries.date) {
-      const minDate = new Date(queries.date);
-      minDate.setUTCHours(0, 0, 0, 0);
-      const maxDate = new Date(minDate);
-      maxDate.setUTCHours(23, 59, 59, 999);
-      where[queries.dateType] = Between(minDate, maxDate);
+      const { dateMin, dateMax } = this.helperService.getMaxAndMinTimeOfDate(
+        queries.date,
+      );
+      query.andWhere({ [queries.dateType]: Between(dateMin, dateMax) });
+    }
+    if (queries.search) {
+      query.andWhere('category.name ILIKE :titleQuery', {
+        titleQuery: `%${queries.search}%`,
+      });
     }
 
-    return await this.categoryRepository.findAndCount({
-      where,
-      skip,
-      take,
-      order,
-    });
+    return await query.getManyAndCount();
   }
 
   async findOne(id: string, userId: string) {

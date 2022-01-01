@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoryService } from 'src/category/category.service';
+import { HelperService } from 'src/helper/helper.service';
 import { User } from 'src/user/entity/user.entity';
-import { FindManyOptions, FindOneOptions, Repository, Between } from 'typeorm';
+import { Repository, Between, Brackets } from 'typeorm';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { FilterQueryDto } from './dto/filter-query.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -14,6 +15,7 @@ export class TaskService {
     @InjectRepository(Task)
     private taskRepository: Repository<Task>,
     private categoryService: CategoryService,
+    private helperService: HelperService,
   ) {}
 
   async create(createTaskDto: CreateTaskDto, user: User) {
@@ -46,43 +48,70 @@ export class TaskService {
   }
 
   async findAllQuery(queries: FilterQueryDto, userId: string) {
-    const where: FindOneOptions<Task>['where'] = { userId };
+    const skip = (queries.page - 1) * queries.limit || undefined;
 
-    if (queries.categoryId) where.categoryId = queries.categoryId;
+    const take = queries.limit || undefined;
 
-    if (queries.isCompleted) where.isCompleted = queries.isCompleted;
-
-    if (queries.endDate && queries.startDate)
-      where[queries.dateType] = Between(queries.startDate, queries.endDate);
-
-    if (queries.date) {
-      const minDate = new Date(queries.date);
-      minDate.setUTCHours(0, 0, 0, 0);
-      const maxDate = new Date(minDate);
-      maxDate.setUTCHours(23, 59, 59, 999);
-      where[queries.dateType] = Between(minDate, maxDate);
-    }
-
-    const relations: FindOneOptions<Task>['relations'] =
-      queries.showCategory && ['category'];
-
-    const skip: FindManyOptions<Task>['skip'] =
-      (queries.page - 1) * queries.limit || undefined;
-
-    const take: FindManyOptions<Task>['take'] = queries.limit || undefined;
-
-    const order: FindOneOptions<Task>['order'] = queries.orderBy &&
+    const order = queries.orderBy &&
       queries.orderDirection && {
-        [queries.orderBy]: queries.orderDirection,
+        [`task.${queries.orderBy}`]: queries.orderDirection,
       };
 
-    return await this.taskRepository.findAndCount({
-      where,
-      relations,
-      skip,
-      take,
-      order,
-    });
+    const query = this.taskRepository
+      .createQueryBuilder('task')
+      .skip(skip)
+      .take(take)
+      .orderBy(order)
+      .where(
+        new Brackets((qb) => {
+          qb.where(
+            new Brackets((qb2) => {
+              qb2.where('task.userId = :userId', { userId });
+
+              if (queries.isCompleted)
+                qb2.andWhere('task.isCompleted = :isCompleted', {
+                  isCompleted: queries.isCompleted,
+                });
+
+              if (queries.categoryId)
+                qb2.andWhere('task.categoryId = :categoryId', {
+                  categoryId: queries.categoryId,
+                });
+
+              if (queries.endDate && queries.startDate)
+                qb2.andWhere({
+                  [queries.dateType]: Between(
+                    queries.startDate,
+                    queries.endDate,
+                  ),
+                });
+
+              if (queries.date) {
+                const { dateMin, dateMax } =
+                  this.helperService.getMaxAndMinTimeOfDate(queries.date);
+                qb2.andWhere({ [queries.dateType]: Between(dateMin, dateMax) });
+              }
+            }),
+          );
+          if (queries.search) {
+            qb.andWhere(
+              new Brackets((qb3) => {
+                qb3.where('task.title ILIKE :titleQuery', {
+                  titleQuery: `%${queries.search}%`,
+                });
+                qb3.orWhere('task.description ILIKE :descQuery', {
+                  descQuery: `%${queries.search}%`,
+                });
+              }),
+            );
+          }
+        }),
+      );
+
+    if (queries.showCategory)
+      query.leftJoinAndSelect('task.category', 'category');
+
+    return await query.getManyAndCount();
   }
 
   async findOne(id: string, showCategory: boolean, userId: string) {

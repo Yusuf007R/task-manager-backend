@@ -9,7 +9,6 @@ import { JwtRefreshModule } from './auth/jwt-modules/jwt-refresh.module';
 import { JwtAccessModule } from './auth/jwt-modules/jwt-access.module';
 import { createConnection } from 'typeorm';
 import { MailModule } from './mail/mail.module';
-import { HelperModule } from './helper/helper.module';
 import { TaskModule } from './task/task.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAccessAuthGuard } from './auth/guard/jwt-access-auth.guard';
@@ -48,7 +47,6 @@ import { CategoryModule } from './category/category.module';
     JwtRefreshModule,
     JwtAccessModule,
     MailModule,
-    HelperModule,
     TaskModule,
     CategoryModule,
   ],

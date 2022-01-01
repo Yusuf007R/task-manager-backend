@@ -1,6 +1,6 @@
 import { Expose, Transform, Type } from 'class-transformer';
 import {
-  IsBoolean,
+  IsBooleanString,
   IsDate,
   IsIn,
   IsInt,
@@ -11,9 +11,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import IncompatableWith from 'src/helper/class-validator/incompatible-with.decorator';
-
-export const orderDirection = ['ASC', 'DESC', 'asc', 'desc'] as const;
-export type orderDirectionTypes = typeof orderDirection[number];
+import { orderDirection } from 'src/helper/dto/custom.types';
 
 export const dateType = ['date', 'createdAt', 'updatedAt'] as const;
 export type dateTypeTypes = typeof dateType[number];
@@ -32,6 +30,10 @@ export class FilterQueryDto {
   @IsUUID()
   @IsOptional()
   categoryId: string;
+
+  @IsString()
+  @IsOptional()
+  search: string;
 
   @IncompatableWith(['date'])
   @ValidateIf((o: FilterQueryDto) => o.endDate != undefined)
@@ -73,7 +75,7 @@ export class FilterQueryDto {
   @IsIn(orderByArray)
   @IsString()
   @ValidateIf((o: FilterQueryDto) => o.orderDirection != undefined)
-  orderBy: string;
+  orderBy: 'title' | 'description' | 'isCompleted' | 'createdAt' | 'updatedAt';
 
   @IsIn(orderDirection)
   @IsString()
@@ -84,24 +86,14 @@ export class FilterQueryDto {
   })
   @Expose()
   @ValidateIf((o: FilterQueryDto) => o.orderBy != undefined)
-  orderDirection: string;
+  orderDirection: 'ASC' | 'DESC';
 
+  @IsBooleanString()
   @IsOptional()
-  @IsBoolean()
-  @Transform((value) => {
-    if (value.value === 'true') return true;
-    if (value.value === 'false') return false;
-    return false;
-  })
   isCompleted: boolean;
 
-  @IsBoolean()
+  @IsBooleanString()
   @IsOptional()
-  @Transform((value) => {
-    if (value.value === 'true') return true;
-    if (value.value === 'false') return false;
-    return false;
-  })
   showCategory: boolean;
 
   @ValidateIf((o: FilterQueryDto) => o.limit != undefined)
