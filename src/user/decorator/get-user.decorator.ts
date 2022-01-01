@@ -1,8 +1,5 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { IdToUserPipe } from '../pipe/load-user.pipe';
+import { GetUserId } from './get-user-id.decorator';
 
-export const GetUser = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
-    return request.userObj;
-  },
-);
+export const GetUser = (additionalOptions?: any) =>
+  GetUserId(additionalOptions, IdToUserPipe);
