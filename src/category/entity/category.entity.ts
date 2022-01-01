@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -16,13 +17,15 @@ export class Category {
   @Column()
   name: string;
 
-  @Column()
-  color: string;
+  @Column({ type: 'int' })
+  color: number;
 
   @ManyToOne(() => User)
+  @Index()
   user: User;
 
   @Column()
+  @Index()
   userId: string;
 
   @CreateDateColumn()

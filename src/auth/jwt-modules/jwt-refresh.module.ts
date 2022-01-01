@@ -8,7 +8,6 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get('AUTH_JWT_REFRESH'),
-        signOptions: { expiresIn: '60s' },
       }),
       inject: [ConfigService],
     }),

@@ -2,6 +2,7 @@ import { User } from 'src/user/entity/user.entity';
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -17,5 +18,6 @@ export class RefreshToken {
 
   @ManyToOne(() => User)
   @JoinColumn()
+  @Index()
   user: User;
 }

@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -27,9 +28,6 @@ export class Task {
   @Column()
   date: Date;
 
-  @ManyToOne(() => User)
-  user: User;
-
   @CreateDateColumn()
   createdAt: Date;
 
@@ -42,10 +40,16 @@ export class Task {
     cascade: true,
   })
   @JoinColumn()
+  @Index()
   category: Category;
 
   @Column({ nullable: true })
   categoryId: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn()
+  @Index()
+  user: User;
 
   @Column()
   userId: string;

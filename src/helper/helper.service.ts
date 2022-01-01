@@ -10,4 +10,12 @@ export class HelperService {
   generateDatePlusMins(minutes: number) {
     return new Date(Date.now() + minutes * 60000);
   }
+
+  getMaxAndMinTimeOfDate(date: Date) {
+    const dateMin = new Date(date.getTime());
+    dateMin.setHours(0, 0, 0, 0);
+    const dateMax = new Date(dateMin);
+    dateMax.setHours(23, 59, 59, 999);
+    return { dateMin, dateMax };
+  }
 }
