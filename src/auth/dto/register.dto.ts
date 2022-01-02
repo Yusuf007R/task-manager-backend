@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsOptional,
@@ -10,19 +11,24 @@ import {
 } from 'class-validator';
 
 class RegisterDto {
+  @ApiProperty()
   @IsEmail()
   email: string;
 
+  @ApiProperty()
   @IsString()
   firstName: string;
 
+  @ApiProperty()
   @IsString()
   lastName: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsUrl()
   imageUrl: string;
 
+  @ApiProperty()
   @Matches('(?=.*[a-z])', undefined, {
     message: 'password must contain at least one lowercase letter',
   })
