@@ -22,7 +22,7 @@ async function bootstrap() {
     .addTag('task-manager')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('docs', app, document);
 
   await app.listen(3000);
 }
