@@ -18,6 +18,7 @@ import { JwtAccessNotVerifiedAuthGuard } from './guard/jwt-access-not-verified-a
 import { UserService } from 'src/user/user.service';
 import { MailService } from 'src/mail/mail.service';
 import { SetPublic } from './decorator/set-public.decorator';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
