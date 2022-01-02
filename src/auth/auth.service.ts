@@ -29,7 +29,7 @@ export class AuthService {
     private verificationTokenRepository: Repository<VerificationCode>,
   ) {}
 
-  async validateLocal(userData: LoginDto): Promise<{ access_token: string }> {
+  async validateLocal(userData: LoginDto) {
     const user = await this.userService.findUserByEmail(userData.email);
     if (!user) throw new NotFoundException('user not found');
     if (await bcrypt.compare(userData.password, user.password)) {
