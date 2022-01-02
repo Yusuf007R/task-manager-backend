@@ -18,7 +18,12 @@ import { JwtAccessNotVerifiedAuthGuard } from './guard/jwt-access-not-verified-a
 import { UserService } from 'src/user/user.service';
 import { MailService } from 'src/mail/mail.service';
 import { SetPublic } from './decorator/set-public.decorator';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiResponse } from '@nestjs/swagger';
+import {
+  AccessRefreshResponseDto,
+  AccessResponseDto,
+} from './dto/responses.dto';
+import { RefreshToken } from './entity/refresh-token.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -28,12 +33,14 @@ export class AuthController {
     private readonly mailService: MailService,
   ) {}
 
+  @ApiResponse({ type: AccessRefreshResponseDto })
   @SetPublic()
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.validateLocal(loginDto);
   }
 
+  @ApiResponse({ type: AccessRefreshResponseDto })
   @SetPublic()
   @HttpCode(201)
   @Post('register')
@@ -41,6 +48,7 @@ export class AuthController {
     return await this.authService.register(registerDTo);
   }
 
+  @ApiResponse({ type: AccessResponseDto })
   @SetPublic()
   @UseGuards(JwtRefreshAuthGuard)
   @Get('accesstoken')
@@ -50,6 +58,7 @@ export class AuthController {
     };
   }
 
+  @ApiResponse({ type: RefreshToken })
   @SetPublic()
   @UseGuards(JwtRefreshAuthGuard)
   @Post('logout')
@@ -57,6 +66,7 @@ export class AuthController {
     return this.authService.logoutOne(jwtToken);
   }
 
+  @ApiResponse({ type: [RefreshToken] })
   @SetPublic()
   @UseGuards(JwtRefreshAuthGuard)
   @Post('logout/all')
