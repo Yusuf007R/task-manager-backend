@@ -25,7 +25,6 @@ export class Category {
   user: User;
 
   @Column()
-  @Index()
   userId: string;
 
   @CreateDateColumn()
