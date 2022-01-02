@@ -4,30 +4,32 @@ import {
   CreateDateColumn,
   Entity,
   Index,
-  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
-export class VerificationCode {
-  @PrimaryGeneratedColumn()
-  id: number;
+export class Category {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
-  code: string;
+  name: string;
 
-  @Column({ default: false })
-  isPasswordResetCode: boolean;
+  @Column({ type: 'int' })
+  color: number;
 
   @ManyToOne(() => User)
-  @JoinColumn()
   @Index()
   user: User;
 
-  @Column({ default: 10 })
-  remainingAttempts: number;
+  @Column()
+  userId: string;
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

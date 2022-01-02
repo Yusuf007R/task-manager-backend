@@ -1,8 +1,10 @@
 import { Exclude } from 'class-transformer';
+import { Task } from 'src/task/entity/task.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -32,6 +34,9 @@ export class User {
 
   @Column({ default: false })
   verified: boolean;
+
+  @OneToMany(() => Task, (task) => task.user)
+  task: Task;
 
   @Exclude()
   @Column()

@@ -12,7 +12,6 @@ import { RefreshToken } from './entity/refresh-token.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { VerificationCode } from './entity/verification.code.entity';
 import { JwtAccessNotVerifiedStrategy } from './strategy/jwt-access-not-verified.strategy';
-import { HelperModule } from 'src/helper/helper.module';
 import { MailModule } from 'src/mail/mail.module';
 
 @Global()
@@ -22,7 +21,6 @@ import { MailModule } from 'src/mail/mail.module';
     PassportModule,
     JwtAccessModule,
     JwtRefreshModule,
-    HelperModule,
     MailModule,
     TypeOrmModule.forFeature([RefreshToken, VerificationCode]),
   ],
