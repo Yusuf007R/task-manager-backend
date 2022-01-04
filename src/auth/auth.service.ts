@@ -40,8 +40,8 @@ export class AuthService {
 
   async login(user: User) {
     return {
-      access_token: await this.generateAccessToken(user),
-      refresh_token: await this.generateRefreshToken(user.id),
+      accessToken: await this.generateAccessToken(user),
+      refreshToken: await this.generateRefreshToken(user.id),
     };
   }
 
