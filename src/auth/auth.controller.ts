@@ -22,6 +22,7 @@ import { ApiResponse } from '@nestjs/swagger';
 import {
   AccessRefreshResponseDto,
   AccessResponseDto,
+  CodeResponseDto,
 } from './dto/responses.dto';
 import { RefreshToken } from './entity/refresh-token.entity';
 
@@ -54,7 +55,7 @@ export class AuthController {
   @Get('accesstoken')
   async getNewAccessToken(@GetUser() user: User) {
     return {
-      access_token: await this.authService.generateAccessToken(user),
+      accessToken: await this.authService.generateAccessToken(user),
     };
   }
 
@@ -76,6 +77,7 @@ export class AuthController {
 
   @SetPublic()
   @Get('sendAccountVerificationCode')
+  @ApiResponse({ type: CodeResponseDto })
   @UseGuards(JwtAccessNotVerifiedAuthGuard)
   async sendAccountVerificationCode(@GetUser() user: User) {
     const verificationCode = await this.authService.getVerificationCode(user);
@@ -90,13 +92,14 @@ export class AuthController {
 
   @SetPublic()
   @Get('verifyAccountCode/:code')
+  @ApiResponse({ type: AccessResponseDto })
   @UseGuards(JwtAccessNotVerifiedAuthGuard)
   async verifyAccountCode(@GetUser() user: User, @Param('code') code: string) {
     await this.authService.verifyCode(user, code);
     user.verified = true;
     await this.userService.updateUserInstance(user);
     return {
-      access_token: await this.authService.generateAccessToken(user),
+      accessToken: await this.authService.generateAccessToken(user),
     };
   }
 }
