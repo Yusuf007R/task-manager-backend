@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  HttpCode,
 } from '@nestjs/common';
 import { TaskService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -25,6 +26,7 @@ export class TaskController {
 
   @ApiResponse({ type: Task })
   @Post()
+  @HttpCode(201)
   create(@Body() createTaskDto: CreateTaskDto, @GetUser() user: User) {
     return this.taskService.create(createTaskDto, user);
   }
