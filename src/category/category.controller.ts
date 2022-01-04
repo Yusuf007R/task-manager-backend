@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  HttpCode,
 } from '@nestjs/common';
 import { ApiResponse } from '@nestjs/swagger';
 import { GetUserId } from 'src/user/decorator/get-user-id.decorator';
@@ -24,6 +25,7 @@ export class CategoryController {
 
   @ApiResponse({ type: Category })
   @Post()
+  @HttpCode(201)
   create(@Body() createCategoryDto: CreateCategoryDto, @GetUser() user: User) {
     return this.categoryService.create(createCategoryDto, user);
   }
