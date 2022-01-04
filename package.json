@@ -26,8 +26,10 @@
     "@nestjs/config": "^1.1.5",
     "@nestjs/core": "^8.0.0",
     "@nestjs/jwt": "^8.0.0",
+    "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^8.0.1",
     "@nestjs/platform-express": "^8.0.0",
+    "@nestjs/swagger": "^5.1.5",
     "@nestjs/typeorm": "^8.0.2",
     "@sendgrid/mail": "^7.6.0",
     "bcrypt": "^5.0.1",
@@ -41,6 +43,7 @@
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
+    "swagger-ui-express": "^4.3.0",
     "typeorm": "^0.2.41"
   },
   "devDependencies": {
@@ -55,6 +58,8 @@
     "@types/supertest": "^2.0.11",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
+    "commitizen": "^4.2.4",
+    "cz-emoji": "^1.3.1",
     "eslint": "^8.0.1",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
@@ -66,9 +71,7 @@
     "ts-loader": "^9.2.3",
     "ts-node": "^10.0.0",
     "tsconfig-paths": "^3.10.1",
-    "typescript": "^4.3.5",
-    "commitizen": "^4.2.4",
-    "cz-emoji": "^1.3.1"
+    "typescript": "^4.3.5"
   },
   "jest": {
     "moduleFileExtensions": [

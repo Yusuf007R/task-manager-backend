@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -21,6 +22,7 @@ export class VerificationCode {
 
   @ManyToOne(() => User)
   @JoinColumn()
+  @Index()
   user: User;
 
   @Column({ default: 10 })
