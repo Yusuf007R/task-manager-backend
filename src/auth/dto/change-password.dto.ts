@@ -19,6 +19,7 @@ class changeForgotPasswordDto {
 }
 
 class ChangePasswordDto {
+  @ApiProperty()
   @IsString()
   password: string;
 

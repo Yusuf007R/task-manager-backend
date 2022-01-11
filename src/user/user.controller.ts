@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { GetUser } from './decorator/get-user.decorator';
 import { User } from './entity/user.entity';
 import { JwtAccessNotVerifiedAuthGuard } from 'src/auth/guard/jwt-access-not-verified-auth.guard';
@@ -20,7 +20,7 @@ export class UserController {
     return user;
   }
 
-  @Put()
+  @Patch()
   @UseGuards(JwtAccessAuthGuard)
   updateUser(@Body() body: UserUpdateDto, @GetUser() user: User) {
     return this.userService.updateUser(body, user);
