@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   HttpCode,
-  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -22,9 +21,19 @@ import { ApiResponse } from '@nestjs/swagger';
 import {
   AccessRefreshResponseDto,
   AccessResponseDto,
-  CodeResponseDto,
+  MessageResponseDto,
 } from './dto/responses.dto';
 import { RefreshToken } from './entity/refresh-token.entity';
+import { JwtPasswordAuthGuard } from './guard/jwt-password-auth.guard';
+import {
+  changeForgotPasswordDto,
+  ChangePasswordDto,
+} from './dto/change-password.dto';
+import {
+  sendPasswordCodeDto,
+  verifyCodeDto,
+  verifyPasswordCodeDto,
+} from './dto/codes.dot';
 
 @Controller('auth')
 export class AuthController {
@@ -52,7 +61,7 @@ export class AuthController {
   @ApiResponse({ type: AccessResponseDto })
   @SetPublic()
   @UseGuards(JwtRefreshAuthGuard)
-  @Get('accesstoken')
+  @Get('access-token')
   async getNewAccessToken(@GetUser() user: User) {
     return {
       accessToken: await this.authService.generateAccessToken(user),
@@ -75,9 +84,33 @@ export class AuthController {
     return this.authService.logoutAll(user);
   }
 
+  @ApiResponse({ type: MessageResponseDto })
   @SetPublic()
-  @Get('sendAccountVerificationCode')
-  @ApiResponse({ type: CodeResponseDto })
+  @UseGuards(JwtPasswordAuthGuard)
+  @Post('change-forgot-password')
+  async changeForgotPassword(
+    @GetUser() user: User,
+    @Body() body: changeForgotPasswordDto,
+  ) {
+    await this.authService.changePassword(user, body.password);
+    return {
+      message: 'Password changed, and All tokens revoked',
+    };
+  }
+
+  @ApiResponse({ type: MessageResponseDto })
+  @Post('change-password')
+  async changePassword(@GetUser() user: User, @Body() body: ChangePasswordDto) {
+    await this.authService.validatePassword(user, body.password);
+    await this.authService.changePassword(user, body.newPassword);
+    return {
+      message: 'Password changed, and All tokens revoked',
+    };
+  }
+
+  @SetPublic()
+  @Post('send-account-verification-code')
+  @ApiResponse({ type: MessageResponseDto })
   @UseGuards(JwtAccessNotVerifiedAuthGuard)
   async sendAccountVerificationCode(@GetUser() user: User) {
     const verificationCode = await this.authService.getVerificationCode(user);
@@ -91,15 +124,43 @@ export class AuthController {
   }
 
   @SetPublic()
-  @Get('verifyAccountCode/:code')
+  @Post('verify-account-code')
   @ApiResponse({ type: AccessResponseDto })
   @UseGuards(JwtAccessNotVerifiedAuthGuard)
-  async verifyAccountCode(@GetUser() user: User, @Param('code') code: string) {
-    await this.authService.verifyCode(user, code);
+  async verifyAccountCode(@GetUser() user: User, @Body() body: verifyCodeDto) {
+    await this.authService.verifyCode(user, body.code);
     user.verified = true;
     await this.userService.updateUserInstance(user);
     return {
       accessToken: await this.authService.generateAccessToken(user),
+    };
+  }
+  @SetPublic()
+  @Post('send-password-reset-code')
+  @ApiResponse({ type: MessageResponseDto })
+  async sendPasswordCode(@Body() body: sendPasswordCodeDto) {
+    const user = await this.userService.findUserByEmail(body.email);
+    const verificationCode = await this.authService.getVerificationCode(
+      user,
+      true,
+    );
+    await this.mailService.sendVerificationCode(
+      body.email,
+      verificationCode.code,
+    );
+    return {
+      message: 'Verification code sent',
+    };
+  }
+
+  @Post('verify-password-code')
+  @SetPublic()
+  @ApiResponse({ type: AccessResponseDto })
+  async verifyPasswordCode(@Body() body: verifyPasswordCodeDto) {
+    const user = await this.userService.findUserByEmail(body.email);
+    await this.authService.verifyCode(user, body.code, true);
+    return {
+      accessToken: await this.authService.generatePasswordToken(user),
     };
   }
 }

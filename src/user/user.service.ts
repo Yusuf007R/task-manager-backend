@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeepPartial, Repository } from 'typeorm';
 
@@ -12,18 +16,14 @@ export class UserService {
   ) {}
 
   async findUserByEmail(email: string): Promise<User | null> {
-    try {
-      return await this.userRepository.findOneOrFail({ where: { email } });
-    } catch (error) {
-      return null;
-    }
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) throw new NotFoundException('user not found');
+    return user;
   }
   async findUserById(id: string): Promise<User | null> {
-    try {
-      return await this.userRepository.findOneOrFail({ where: { id } });
-    } catch (error) {
-      return null;
-    }
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('user not found');
+    return user;
   }
 
   async createUser(userData: DeepPartial<User>): Promise<User | null> {
@@ -31,6 +31,10 @@ export class UserService {
     if (dbUser) throw new ConflictException('email is already taken');
     const user = this.userRepository.create(userData);
     return this.userRepository.save(user);
+  }
+
+  async updateUser(userData: DeepPartial<User>, user: User): Promise<User> {
+    return this.userRepository.save({ ...user, ...userData });
   }
 
   async updateUserInstance(user: User): Promise<User> {
