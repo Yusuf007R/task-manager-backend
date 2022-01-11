@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  NotFoundException,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -140,6 +141,7 @@ export class AuthController {
   @ApiResponse({ type: MessageResponseDto })
   async sendPasswordCode(@Body() body: sendPasswordCodeDto) {
     const user = await this.userService.findUserByEmail(body.email);
+    if (!user) throw new NotFoundException('User not found');
     const verificationCode = await this.authService.getVerificationCode(
       user,
       true,
@@ -158,6 +160,7 @@ export class AuthController {
   @ApiResponse({ type: AccessResponseDto })
   async verifyPasswordCode(@Body() body: verifyPasswordCodeDto) {
     const user = await this.userService.findUserByEmail(body.email);
+    if (!user) throw new NotFoundException('User not found');
     await this.authService.verifyCode(user, body.code, true);
     return {
       accessToken: await this.authService.generatePasswordToken(user),
