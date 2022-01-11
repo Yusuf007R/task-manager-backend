@@ -12,7 +12,7 @@ export class AccessResponseDto {
   accessToken: string;
 }
 
-export class CodeResponseDto {
+export class MessageResponseDto {
   @ApiProperty()
   message: string;
 }

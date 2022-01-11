@@ -25,9 +25,6 @@ export class VerificationCode {
   @Index()
   user: User;
 
-  @Column({ default: 10 })
-  remainingAttempts: number;
-
   @CreateDateColumn()
   createdAt: Date;
 }

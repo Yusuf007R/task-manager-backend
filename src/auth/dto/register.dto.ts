@@ -5,6 +5,7 @@ import {
   IsString,
   IsUrl,
   Matches,
+  MaxLength,
   MinLength,
   // Matches,
   // MinLength,
@@ -39,6 +40,7 @@ class RegisterDto {
     message: 'password must contain at least one digit',
   })
   @MinLength(8)
+  @MaxLength(24)
   @IsString()
   password: string;
 }

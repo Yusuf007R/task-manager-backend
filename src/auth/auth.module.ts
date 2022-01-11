@@ -14,6 +14,9 @@ import { VerificationCode } from './entity/verification.code.entity';
 import { JwtAccessNotVerifiedStrategy } from './strategy/jwt-access-not-verified.strategy';
 import { MailModule } from 'src/mail/mail.module';
 
+import { JwtPasswordModule } from './jwt-modules/jwt-password.module';
+import { JwtPasswordStrategy } from './strategy/jwt-password.strategy';
+
 @Global()
 @Module({
   imports: [
@@ -21,6 +24,7 @@ import { MailModule } from 'src/mail/mail.module';
     PassportModule,
     JwtAccessModule,
     JwtRefreshModule,
+    JwtPasswordModule,
     MailModule,
     TypeOrmModule.forFeature([RefreshToken, VerificationCode]),
   ],
@@ -28,6 +32,7 @@ import { MailModule } from 'src/mail/mail.module';
     AuthService,
     JwtRefreshStrategy,
     JwtAccessStrategy,
+    JwtPasswordStrategy,
     JwtAccessNotVerifiedStrategy,
   ],
   controllers: [AuthController],

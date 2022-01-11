@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -23,6 +24,7 @@ export class AuthService {
     private helperService: HelperService,
     @Inject('JwtAccess') private jwtAccess: JwtService,
     @Inject('JwtRefresh') private jwtRefresh: JwtService,
+    @Inject('JwtPassword') private jwtPassword: JwtService,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
     @InjectRepository(VerificationCode)
@@ -32,8 +34,13 @@ export class AuthService {
   async validateLocal(userData: LoginDto) {
     const user = await this.userService.findUserByEmail(userData.email);
     if (!user) throw new NotFoundException('user not found');
-    if (await bcrypt.compare(userData.password, user.password)) {
-      return this.login(user);
+    await this.validatePassword(user, userData.password);
+    return this.login(user);
+  }
+
+  async validatePassword(user: User, password: string) {
+    if (await bcrypt.compare(password, user.password)) {
+      return null;
     }
     throw new ForbiddenException('wrong password');
   }
@@ -52,6 +59,12 @@ export class AuthService {
     });
   }
 
+  async generatePasswordToken(user: User) {
+    return await this.jwtPassword.signAsync({
+      id: user.id,
+    });
+  }
+
   async generateRefreshToken(id: string) {
     const user = await this.userService.findUserById(id);
     const token = await this.jwtRefresh.signAsync({ id });
@@ -62,13 +75,19 @@ export class AuthService {
 
   async register(user: DeepPartial<User>) {
     const { password, ...restUser } = user;
-    const saltRounds = 10;
-    const hash = await bcrypt.hash(password, saltRounds);
+    const hash = await bcrypt.hash(password, 10);
     const userCreated = await this.userService.createUser({
       password: hash,
       ...restUser,
     });
     return this.login(userCreated);
+  }
+
+  async changePassword(user: User, password: string) {
+    const hash = await bcrypt.hash(password, 10);
+    user.password = hash;
+    await this.userService.updateUserInstance(user);
+    return await this.logoutAll(user);
   }
 
   async logoutOne(token: string) {
@@ -86,7 +105,7 @@ export class AuthService {
   async getVerificationCode(user: User, isPasswordResetCode = false) {
     if (user.verified && !isPasswordResetCode)
       throw new ForbiddenException('user already verified');
-    const date = this.helperService.generateDatePlusMins(-1);
+    const date = this.helperService.generateDatePlusMins(-2);
     const userCode = await this.verificationTokenRepository.findOne({
       where: {
         user,
@@ -94,7 +113,11 @@ export class AuthService {
         createdAt: MoreThan(date),
       },
     });
-    if (userCode) return userCode;
+    if (userCode)
+      throw new ConflictException(
+        userCode.createdAt.toISOString(),
+        'conflict, code already sent',
+      );
     const code = this.helperService.generateRandomString(4);
     const verificationCode = this.verificationTokenRepository.create({
       code: code,
@@ -111,7 +134,7 @@ export class AuthService {
       where: { user, code, isPasswordResetCode },
     });
     if (!verificationCode) throw new UnauthorizedException('invalid code');
-    const date = this.helperService.generateDatePlusMins(-30);
+    const date = this.helperService.generateDatePlusMins(-5);
     if (verificationCode.createdAt.getTime() < date.getTime()) {
       throw new UnauthorizedException('expired code');
     }
