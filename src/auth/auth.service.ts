@@ -67,6 +67,7 @@ export class AuthService {
 
   async generateRefreshToken(id: string) {
     const user = await this.userService.findUserById(id);
+    if (!user) throw new NotFoundException('user not found');
     const token = await this.jwtRefresh.signAsync({ id });
     const refreshToken = this.refreshTokenRepository.create({ token, user });
     await this.refreshTokenRepository.save(refreshToken);
