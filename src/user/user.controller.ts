@@ -6,6 +6,7 @@ import { ApiResponse } from '@nestjs/swagger';
 import { JwtAccessAuthGuard } from 'src/auth/guard/jwt-access-auth.guard';
 import { UserUpdateDto } from './dto/update-user.dto';
 import { UserService } from './user.service';
+import { SetPublic } from 'src/auth/decorator/set-public.decorator';
 
 @Controller('user')
 export class UserController {
@@ -15,6 +16,7 @@ export class UserController {
     type: User,
   })
   @Get()
+  @SetPublic()
   @UseGuards(JwtAccessNotVerifiedAuthGuard)
   getHello(@GetUser() user: User) {
     return user;
