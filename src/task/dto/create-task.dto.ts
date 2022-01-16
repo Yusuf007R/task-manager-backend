@@ -14,7 +14,6 @@ export class CreateTaskDto {
   @ApiPropertyOptional()
   @IsBoolean()
   @Transform((value) => {
-    console.log(value.value);
     if (value.value == undefined) return false;
     return value.value;
   })
