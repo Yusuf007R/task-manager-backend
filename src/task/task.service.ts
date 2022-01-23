@@ -2,8 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoryService } from 'src/category/category.service';
 import { HelperService } from 'src/helper/helper.service';
+import { SyncTaskDto } from 'src/sync/dto/sync-task.dto';
 import { User } from 'src/user/entity/user.entity';
-import { Repository, Between, Brackets } from 'typeorm';
+import { Repository, Between, Brackets, FindConditions } from 'typeorm';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { FilterQueryDto } from './dto/filter-query.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -26,7 +27,8 @@ export class TaskService {
         createTaskDto.categoryId,
         user.id,
       );
-      if (category) task.category = category;
+      if (!category) throw new NotFoundException('category not found');
+      task.category = category;
     }
     return await this.taskRepository.save(task);
   }
@@ -114,12 +116,23 @@ export class TaskService {
     return await query.getManyAndCount();
   }
 
-  async findOne(id: string, showCategory: boolean, userId: string) {
+  async findOne(
+    id: string,
+    showCategory: boolean,
+    userId?: string,
+    withDeleted = false,
+    withUserRelation = false,
+  ) {
+    const where: FindConditions<Task> = { id };
+    if (userId) where.userId = userId;
+    const relations = [];
+    if (showCategory) relations.push('category');
+    if (withUserRelation) relations.push('user');
     const task = await this.taskRepository.findOne({
-      where: { id, userId },
-      relations: showCategory ? ['category'] : undefined,
+      where,
+      relations,
+      withDeleted,
     });
-    if (!task) throw new NotFoundException('task not found');
     return task;
   }
 
@@ -137,12 +150,71 @@ export class TaskService {
     return await this.taskRepository.save({
       ...task,
       ...updateTaskDto,
+      updatedAt: new Date(),
     });
   }
 
-  async remove(id: string, userId: string) {
-    const task = await this.taskRepository.findOne({ where: { id, userId } });
+  async syncUpdate(
+    id: string,
+    updateTaskDto: SyncTaskDto,
+    userId: string,
+    undeleting = false,
+  ) {
+    const task = await this.taskRepository.findOne({
+      where: { id, userId },
+      withDeleted: true,
+      relations: ['category', 'user'],
+    });
     if (!task) throw new NotFoundException('task not found');
-    return await this.taskRepository.remove(task);
+    if (updateTaskDto.categoryId) {
+      const category = await this.categoryService.findOne(
+        updateTaskDto.categoryId,
+        userId,
+      );
+      if (category) task.category = category;
+    }
+    if (updateTaskDto.categoryId === null) task.category = null;
+    if (undeleting) task.deletedAt = null;
+    return await this.taskRepository.save({
+      ...task,
+      ...updateTaskDto,
+    });
+  }
+
+  async remove(
+    id: string,
+    userId: string,
+    withDeleted = false,
+    withUserRelation = false,
+  ) {
+    const task = await this.taskRepository.findOne({
+      where: { id, userId },
+      withDeleted,
+      relations: withUserRelation && ['user'],
+    });
+    if (!task) throw new NotFoundException('task not found');
+    const date = new Date();
+
+    return await this.taskRepository.save({
+      ...task,
+      deletedAt: date,
+      updatedAt: date,
+    });
+  }
+
+  async syncFind(syncedAt: Date, userId: string) {
+    const query = this.taskRepository.createQueryBuilder('task');
+    query
+      .withDeleted()
+      .where('task.userId = :userId', { userId })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('task.updatedAt >= :syncedAt', { syncedAt })
+            .orWhere('task.deletedAt >= :syncedAt', { syncedAt })
+            .orWhere('task.createdAt >= :syncedAt', { syncedAt });
+        }),
+      );
+
+    return await query.getMany();
   }
 }

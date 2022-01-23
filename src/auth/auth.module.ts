@@ -16,6 +16,7 @@ import { MailModule } from 'src/mail/mail.module';
 
 import { JwtPasswordModule } from './jwt-modules/jwt-password.module';
 import { JwtPasswordStrategy } from './strategy/jwt-password.strategy';
+import { HttpModule } from 'nestjs-http-promise';
 
 @Global()
 @Module({
@@ -26,6 +27,7 @@ import { JwtPasswordStrategy } from './strategy/jwt-password.strategy';
     JwtRefreshModule,
     JwtPasswordModule,
     MailModule,
+    HttpModule,
     TypeOrmModule.forFeature([RefreshToken, VerificationCode]),
   ],
   providers: [

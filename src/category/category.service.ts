@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HelperService } from 'src/helper/helper.service';
+import { SyncCategoryDto } from 'src/sync/dto/sync-categorie.dto';
 import { User } from 'src/user/entity/user.entity';
-import { Between, Repository } from 'typeorm';
+import { Between, Brackets, FindConditions, Repository } from 'typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { FilterQueryDto } from './dto/filter-query.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -72,11 +73,20 @@ export class CategoryService {
     return await query.getManyAndCount();
   }
 
-  async findOne(id: string, userId: string) {
+  async findOne(
+    id: string,
+    userId?: string,
+    withDeleted = false,
+    withUserRelation = false,
+  ) {
+    const where: FindConditions<Category> = { id };
+    if (userId) where.userId = userId;
     const category = await this.categoryRepository.findOne({
-      where: { id, userId },
+      where,
+      withDeleted,
+      relations: withUserRelation && ['user'],
     });
-    if (!category) throw new NotFoundException('category not found');
+
     return category;
   }
 
@@ -85,21 +95,69 @@ export class CategoryService {
     updateCategoryDto: UpdateCategoryDto,
     userId: string,
   ) {
-    const category = await this.categoryRepository.find({
+    const category = await this.categoryRepository.findOne({
       where: { id, userId },
     });
     if (!category) throw new NotFoundException('category not found');
     return await this.categoryRepository.save({
       ...category,
       ...updateCategoryDto,
+      updatedAt: new Date(),
     });
   }
 
-  async remove(id: string, userId: string) {
-    const category = await this.categoryRepository.find({
+  async syncUpdate(
+    id: string,
+    updateCategoryDto: SyncCategoryDto,
+    userId: string,
+    undeleting = false,
+  ) {
+    const category = await this.categoryRepository.findOne({
       where: { id, userId },
+      withDeleted: true,
+      relations: ['user'],
     });
     if (!category) throw new NotFoundException('category not found');
-    return await this.categoryRepository.remove(category);
+    if (undeleting) category.deletedAt = null;
+    return await this.categoryRepository.save({
+      ...category,
+      ...updateCategoryDto,
+    });
+  }
+
+  async remove(
+    id: string,
+    userId: string,
+    withDeleted = false,
+    withUserRelation = false,
+  ) {
+    const category = await this.categoryRepository.findOne({
+      where: { id, userId },
+      withDeleted,
+      relations: withUserRelation && ['user'],
+    });
+    if (!category) throw new NotFoundException('category not found');
+    const date = new Date();
+    return await this.categoryRepository.save({
+      ...category,
+      deletedAt: date,
+      updatedAt: date,
+    });
+  }
+
+  async syncFind(syncedAt: Date, userId: string) {
+    const query = this.categoryRepository.createQueryBuilder('category');
+    query
+      .withDeleted()
+      .where('category.userId = :userId', { userId })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('category.updatedAt >= :syncedAt', { syncedAt })
+            .orWhere('category.deletedAt >= :syncedAt', { syncedAt })
+            .orWhere('category.createdAt >= :syncedAt', { syncedAt });
+        }),
+      );
+
+    return await query.getMany();
   }
 }

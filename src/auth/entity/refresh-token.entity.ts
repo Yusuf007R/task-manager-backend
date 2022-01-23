@@ -24,4 +24,12 @@ export class RefreshToken {
   @JoinColumn()
   @Index()
   user: User;
+
+  @ApiProperty()
+  @Column()
+  lastTimeOfUse: Date;
+
+  @ApiProperty()
+  @Column()
+  ipAddress: string;
 }

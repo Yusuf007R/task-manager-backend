@@ -2,12 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/user/entity/user.entity';
 import {
   Column,
-  CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   Index,
   ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
@@ -34,10 +33,14 @@ export class Category {
   userId: string;
 
   @ApiProperty()
-  @CreateDateColumn()
+  @Column({ default: () => 'NOW()' })
   createdAt: Date;
 
   @ApiProperty()
-  @UpdateDateColumn()
+  @Column({ default: () => 'NOW()' })
   updatedAt: Date;
+
+  @ApiProperty()
+  @DeleteDateColumn()
+  deletedAt: Date;
 }

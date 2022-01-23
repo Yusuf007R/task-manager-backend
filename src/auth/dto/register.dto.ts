@@ -18,11 +18,7 @@ class RegisterDto {
 
   @ApiProperty()
   @IsString()
-  firstName: string;
-
-  @ApiProperty()
-  @IsString()
-  lastName: string;
+  name: string;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   HttpCode,
+  NotFoundException,
 } from '@nestjs/common';
 import { TaskService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -19,6 +20,7 @@ import { FilterQueryDto } from './dto/filter-query.dto';
 import { GetUserId } from 'src/user/decorator/get-user-id.decorator';
 import { Task } from './entity/task.entity';
 import { ApiResponse } from '@nestjs/swagger';
+import { ParamUUID } from 'src/helper/dto/param-uuid.dto';
 
 @Controller('task')
 export class TaskController {
@@ -40,26 +42,28 @@ export class TaskController {
   @ApiResponse({ type: Task })
   @Get(':id')
   findOne(
-    @Param('id') id: string,
+    @Param() param: ParamUUID,
     @GetshowCategory() showCategory: boolean,
     @GetUserId() userId: string,
   ) {
-    return this.taskService.findOne(id, showCategory, userId);
+    const task = this.taskService.findOne(param.id, showCategory, userId);
+    if (!task) throw new NotFoundException('task not found');
+    return task;
   }
 
   @ApiResponse({ type: Task })
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param() param: ParamUUID,
     @Body() updateTaskDto: UpdateTaskDto,
     @GetUserId() userId: string,
   ) {
-    return this.taskService.update(id, updateTaskDto, userId);
+    return this.taskService.update(param.id, updateTaskDto, userId);
   }
 
   @ApiResponse({ type: Task })
   @Delete(':id')
-  remove(@Param('id') id: string, @GetUserId() userId: string) {
-    return this.taskService.remove(id, userId);
+  remove(@Param() param: ParamUUID, @GetUserId() userId: string) {
+    return this.taskService.remove(param.id, userId);
   }
 }

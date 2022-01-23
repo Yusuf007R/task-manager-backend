@@ -8,8 +8,10 @@ import {
   Delete,
   Query,
   HttpCode,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiResponse } from '@nestjs/swagger';
+import { ParamUUID } from 'src/helper/dto/param-uuid.dto';
 import { GetUserId } from 'src/user/decorator/get-user-id.decorator';
 import { GetUser } from 'src/user/decorator/get-user.decorator';
 import { User } from 'src/user/entity/user.entity';
@@ -38,23 +40,25 @@ export class CategoryController {
 
   @ApiResponse({ type: Category })
   @Get(':id')
-  findOne(@Param('id') id: string, @GetUserId() userId: string) {
-    return this.categoryService.findOne(id, userId);
+  findOne(@Param() param: ParamUUID, @GetUserId() userId: string) {
+    const category = this.categoryService.findOne(param.id, userId);
+    if (!category) throw new NotFoundException(`category not found`);
+    return category;
   }
 
   @ApiResponse({ type: Category })
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param() param: ParamUUID,
     @Body() updateCategoryDto: UpdateCategoryDto,
     @GetUserId() userId: string,
   ) {
-    return this.categoryService.update(id, updateCategoryDto, userId);
+    return this.categoryService.update(param.id, updateCategoryDto, userId);
   }
 
   @ApiResponse({ type: Category })
   @Delete(':id')
-  remove(@Param('id') id: string, @GetUserId() userId: string) {
-    return this.categoryService.remove(id, userId);
+  remove(@Param() param: ParamUUID, @GetUserId() userId: string) {
+    return this.categoryService.remove(param.id, userId);
   }
 }

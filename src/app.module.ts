@@ -13,6 +13,7 @@ import { TaskModule } from './task/task.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAccessAuthGuard } from './auth/guard/jwt-access-auth.guard';
 import { CategoryModule } from './category/category.module';
+import { SyncModule } from './sync/sync.module';
 
 @Global()
 @Module({
@@ -49,6 +50,7 @@ import { CategoryModule } from './category/category.module';
     MailModule,
     TaskModule,
     CategoryModule,
+    SyncModule,
   ],
   controllers: [AppController],
   providers: [

@@ -8,7 +8,11 @@ import {
   IsUUID,
 } from 'class-validator';
 
-export class CreateTaskDto {
+export class SyncTaskDto {
+  @ApiProperty()
+  @IsUUID()
+  id: string;
+
   @ApiProperty()
   @IsString()
   title: string;
@@ -35,4 +39,20 @@ export class CreateTaskDto {
   @IsOptional()
   @IsUUID()
   categoryId: string;
+
+  @ApiProperty()
+  @IsDate()
+  @Type(() => Date)
+  createdAt: Date;
+
+  @ApiProperty()
+  @IsDate()
+  @Type(() => Date)
+  updatedAt: Date;
+
+  @ApiProperty()
+  @IsDate()
+  @IsOptional()
+  @Type(() => Date)
+  deletedAt: Date;
 }

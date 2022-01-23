@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   NotFoundException,
+  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -22,6 +23,7 @@ import { ApiResponse } from '@nestjs/swagger';
 import {
   AccessRefreshResponseDto,
   AccessResponseDto,
+  GetActiveSessionDto,
   MessageResponseDto,
 } from './dto/responses.dto';
 import { RefreshToken } from './entity/refresh-token.entity';
@@ -35,6 +37,7 @@ import {
   verifyCodeDto,
   verifyPasswordCodeDto,
 } from './dto/codes.dot';
+import { GetIp } from 'src/helper/decorator/get-ip.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -47,23 +50,28 @@ export class AuthController {
   @ApiResponse({ type: AccessRefreshResponseDto })
   @SetPublic()
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.validateLocal(loginDto);
+  async login(@Body() loginDto: LoginDto, @GetIp() ip: string) {
+    return this.authService.validateLocal(loginDto, ip);
   }
 
   @ApiResponse({ type: AccessRefreshResponseDto })
   @SetPublic()
   @HttpCode(201)
   @Post('register')
-  async register(@Body() registerDTo: RegisterDto) {
-    return await this.authService.register(registerDTo);
+  async register(@Body() registerDTo: RegisterDto, @GetIp() ip: string) {
+    return await this.authService.register(registerDTo, ip);
   }
 
   @ApiResponse({ type: AccessResponseDto })
   @SetPublic()
   @UseGuards(JwtRefreshAuthGuard)
   @Get('access-token')
-  async getNewAccessToken(@GetUser() user: User) {
+  async getNewAccessToken(
+    @GetUser() user: User,
+    @GetIp() ip: string,
+    @GetJwt() jwtToken: string,
+  ) {
+    await this.authService.updateRefreshToken(jwtToken, ip);
     return {
       accessToken: await this.authService.generateAccessToken(user),
     };
@@ -165,5 +173,20 @@ export class AuthController {
     return {
       accessToken: await this.authService.generatePasswordToken(user),
     };
+  }
+
+  @Get('get-active-sessions')
+  @ApiResponse({ type: GetActiveSessionDto })
+  async GetActiveSessions(@GetUser() user: User) {
+    return this.authService.getActiveSessions(user);
+  }
+
+  @Post('logout-by-session-id/:sessionId')
+  @ApiResponse({ type: RefreshToken })
+  async LogoutBySessionId(
+    @GetUser() user: User,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.authService.revokeSession(user, sessionId);
   }
 }

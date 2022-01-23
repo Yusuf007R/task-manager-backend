@@ -3,13 +3,12 @@ import { Category } from 'src/category/entity/category.entity';
 import { User } from 'src/user/entity/user.entity';
 import {
   Column,
-  CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
@@ -35,14 +34,6 @@ export class Task {
   date: Date;
 
   @ApiProperty()
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @ApiProperty()
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  @ApiProperty()
   @ManyToOne(() => Category, {
     nullable: true,
     onDelete: 'SET NULL',
@@ -65,4 +56,16 @@ export class Task {
   @ApiProperty()
   @Column()
   userId: string;
+
+  @ApiProperty()
+  @Column({ default: () => 'NOW()' })
+  createdAt: Date;
+
+  @ApiProperty()
+  @Column({ default: () => 'NOW()' })
+  updatedAt: Date;
+
+  @ApiProperty()
+  @DeleteDateColumn()
+  deletedAt: Date;
 }

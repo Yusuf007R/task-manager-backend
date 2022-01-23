@@ -16,5 +16,6 @@ import { CategoryModule } from 'src/category/category.module';
   ],
   controllers: [TaskController],
   providers: [TaskService],
+  exports: [TaskService],
 })
 export class TaskModule {}

@@ -16,6 +16,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { RefreshToken } from './entity/refresh-token.entity';
 import { VerificationCode } from './entity/verification.code.entity';
 import { HelperService } from 'src/helper/helper.service';
+import { HttpService } from 'nestjs-http-promise';
 
 @Injectable()
 export class AuthService {
@@ -29,13 +30,14 @@ export class AuthService {
     private refreshTokenRepository: Repository<RefreshToken>,
     @InjectRepository(VerificationCode)
     private verificationTokenRepository: Repository<VerificationCode>,
+    private httpService: HttpService,
   ) {}
 
-  async validateLocal(userData: LoginDto) {
+  async validateLocal(userData: LoginDto, ip) {
     const user = await this.userService.findUserByEmail(userData.email);
     if (!user) throw new NotFoundException('user not found');
     await this.validatePassword(user, userData.password);
-    return this.login(user);
+    return this.login(user, ip);
   }
 
   async validatePassword(user: User, password: string) {
@@ -45,11 +47,21 @@ export class AuthService {
     throw new ForbiddenException('wrong password');
   }
 
-  async login(user: User) {
+  async login(user: User, ip: string) {
     return {
       accessToken: await this.generateAccessToken(user),
-      refreshToken: await this.generateRefreshToken(user.id),
+      refreshToken: await this.generateRefreshToken(user, ip),
     };
+  }
+
+  async updateRefreshToken(jwt: string, ip: string) {
+    const token = await this.refreshTokenRepository.findOne({
+      where: { token: jwt },
+    });
+    if (!token) throw new UnauthorizedException('token not found');
+    token.ipAddress = ip;
+    token.lastTimeOfUse = new Date();
+    return await this.refreshTokenRepository.save(token);
   }
 
   async generateAccessToken(user: User) {
@@ -68,27 +80,30 @@ export class AuthService {
     });
   }
 
-  async generateRefreshToken(id: string) {
-    const user = await this.userService.findUserById(id);
-    if (!user) throw new NotFoundException('user not found');
+  async generateRefreshToken(user: User, ip: string) {
     const token = await this.jwtRefresh.signAsync({
-      id,
+      id: user.id,
       verified: user.verified,
       type: 'refresh',
     });
-    const refreshToken = this.refreshTokenRepository.create({ token, user });
+    const refreshToken = this.refreshTokenRepository.create({
+      token,
+      user,
+      lastTimeOfUse: new Date(),
+      ipAddress: ip,
+    });
     await this.refreshTokenRepository.save(refreshToken);
     return token;
   }
 
-  async register(user: DeepPartial<User>) {
+  async register(user: DeepPartial<User>, ip: string) {
     const { password, ...restUser } = user;
     const hash = await bcrypt.hash(password, 10);
     const userCreated = await this.userService.createUser({
       password: hash,
       ...restUser,
     });
-    return this.login(userCreated);
+    return this.login(userCreated, ip);
   }
 
   async changePassword(user: User, password: string) {
@@ -150,5 +165,24 @@ export class AuthService {
       where: { user, isPasswordResetCode },
     });
     return await this.verificationTokenRepository.remove(codes);
+  }
+
+  async getActiveSessions(user: User) {
+    const tokenDB = await this.refreshTokenRepository.find({ where: { user } });
+
+    return tokenDB.map((token) => ({
+      ip: token.ipAddress,
+      lastTimeOfUse: token.lastTimeOfUse,
+      sessionId: token.id,
+    }));
+  }
+
+  async revokeSession(user: User, sessionId: string) {
+    const tokenDB = await this.refreshTokenRepository.findOne({
+      where: { id: sessionId, user },
+    });
+
+    if (!tokenDB) throw new NotFoundException('session not found');
+    return await this.refreshTokenRepository.remove(tokenDB);
   }
 }

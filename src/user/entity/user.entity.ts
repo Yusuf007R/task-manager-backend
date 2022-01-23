@@ -22,11 +22,7 @@ export class User {
 
   @ApiProperty()
   @Column()
-  firstName: string;
-
-  @ApiProperty()
-  @Column()
-  lastName: string;
+  name: string;
 
   @ApiProperty()
   @Column({ nullable: true })
