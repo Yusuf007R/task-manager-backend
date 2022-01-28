@@ -30,7 +30,7 @@ export class Task {
   isCompleted: boolean;
 
   @ApiProperty()
-  @Column()
+  @Column({ type: 'timestamptz' })
   date: Date;
 
   @ApiProperty()
@@ -58,14 +58,14 @@ export class Task {
   userId: string;
 
   @ApiProperty()
-  @Column({ default: () => 'NOW()' })
+  @Column({ default: () => 'NOW()', type: 'timestamptz' })
   createdAt: Date;
 
   @ApiProperty()
-  @Column({ default: () => 'NOW()' })
+  @Column({ default: () => 'NOW()', type: 'timestamptz' })
   updatedAt: Date;
 
   @ApiProperty()
-  @DeleteDateColumn()
+  @DeleteDateColumn({ type: 'timestamptz' })
   deletedAt: Date;
 }

@@ -40,8 +40,8 @@ export class CategoryController {
 
   @ApiResponse({ type: Category })
   @Get(':id')
-  findOne(@Param() param: ParamUUID, @GetUserId() userId: string) {
-    const category = this.categoryService.findOne(param.id, userId);
+  async findOne(@Param() param: ParamUUID, @GetUserId() userId: string) {
+    const category = await this.categoryService.findOne(param.id, userId);
     if (!category) throw new NotFoundException(`category not found`);
     return category;
   }

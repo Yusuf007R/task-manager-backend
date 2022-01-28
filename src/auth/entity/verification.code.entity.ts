@@ -25,6 +25,6 @@ export class VerificationCode {
   @Index()
   user: User;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

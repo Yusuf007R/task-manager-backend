@@ -33,14 +33,14 @@ export class Category {
   userId: string;
 
   @ApiProperty()
-  @Column({ default: () => 'NOW()' })
+  @Column({ default: () => 'NOW()', type: 'timestamptz' })
   createdAt: Date;
 
   @ApiProperty()
-  @Column({ default: () => 'NOW()' })
+  @Column({ default: () => 'NOW()', type: 'timestamptz' })
   updatedAt: Date;
 
   @ApiProperty()
-  @DeleteDateColumn()
+  @DeleteDateColumn({ type: 'timestamptz' })
   deletedAt: Date;
 }

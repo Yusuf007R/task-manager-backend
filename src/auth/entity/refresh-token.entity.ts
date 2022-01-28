@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/user/entity/user.entity';
 import {
   Column,
+  CreateDateColumn,
   Entity,
   Index,
   JoinColumn,
@@ -25,11 +26,14 @@ export class RefreshToken {
   @Index()
   user: User;
 
-  @ApiProperty()
+  @ApiProperty({ type: 'timestamptz' })
   @Column()
   lastTimeOfUse: Date;
 
   @ApiProperty()
   @Column()
   ipAddress: string;
+
+  @CreateDateColumn({ type: 'timestamptz' })
+  createdAt: Date;
 }

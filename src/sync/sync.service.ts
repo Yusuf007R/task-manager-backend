@@ -31,12 +31,12 @@ export class SyncService {
       }
       if (category.userId !== user.id) {
         console.log('category.userId !== user.id');
-        throw new ConflictException(`id: ${category.id} is duplicated`);
+        throw new ConflictException(`duplicated id:${category.id}`);
       }
 
       if (categoryDto.createdAt > category.updatedAt) {
         console.log('createdAt > updatedAt');
-        throw new ConflictException(`id: ${category.id} is duplicated`);
+        throw new ConflictException(`duplicated id:${category.id}`);
       }
 
       if (categoryDto.deletedAt) {
@@ -116,12 +116,12 @@ export class SyncService {
       }
       if (task.userId !== user.id) {
         console.log('task.userId !== user.id');
-        throw new ConflictException(`id: ${task.id} is duplicated`);
+        throw new ConflictException(`duplicated id:${task.id}`);
       }
 
       if (task.createdAt > task.updatedAt) {
         console.log('createdAt > updatedAt');
-        throw new ConflictException(`id: ${task.id} is duplicated`);
+        throw new ConflictException(`duplicated id:${task.id}`);
       }
 
       if (taskDto.deletedAt) {

@@ -7,7 +7,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { JwtRefreshModule } from './auth/jwt-modules/jwt-refresh.module';
 import { JwtAccessModule } from './auth/jwt-modules/jwt-access.module';
-import { createConnection } from 'typeorm';
 import { MailModule } from './mail/mail.module';
 import { TaskModule } from './task/task.module';
 import { APP_GUARD } from '@nestjs/core';
@@ -32,16 +31,6 @@ import { SyncModule } from './sync/sync.module';
         synchronize: true,
       }),
       inject: [ConfigService],
-      connectionFactory: async (options) => {
-        const connection = await createConnection(options);
-        const driver = connection.driver as any;
-        driver.postgres.defaults.parseInputDatesAsUTC = true;
-        driver.postgres.types.setTypeParser(
-          1114,
-          (str: any) => new Date(str + 'Z'),
-        );
-        return connection;
-      },
     }),
     AuthModule,
     UserModule,

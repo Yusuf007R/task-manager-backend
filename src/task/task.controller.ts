@@ -41,12 +41,12 @@ export class TaskController {
 
   @ApiResponse({ type: Task })
   @Get(':id')
-  findOne(
+  async findOne(
     @Param() param: ParamUUID,
     @GetshowCategory() showCategory: boolean,
     @GetUserId() userId: string,
   ) {
-    const task = this.taskService.findOne(param.id, showCategory, userId);
+    const task = await this.taskService.findOne(param.id, showCategory, userId);
     if (!task) throw new NotFoundException('task not found');
     return task;
   }
