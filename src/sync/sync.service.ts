@@ -34,6 +34,11 @@ export class SyncService {
         throw new ConflictException(`duplicated id:${category.id}`);
       }
 
+      if (categoryDto.createdAt != category.createdAt) {
+        console.log('createdAt > updatedAt');
+        throw new ConflictException(`duplicated id:${category.id}`);
+      }
+
       if (categoryDto.createdAt > category.updatedAt) {
         console.log('createdAt > updatedAt');
         throw new ConflictException(`duplicated id:${category.id}`);
@@ -119,7 +124,12 @@ export class SyncService {
         throw new ConflictException(`duplicated id:${task.id}`);
       }
 
-      if (task.createdAt > task.updatedAt) {
+      if (taskDto.createdAt != task.createdAt) {
+        console.log('createdAt > updatedAt');
+        throw new ConflictException(`duplicated id:${task.id}`);
+      }
+
+      if (taskDto.createdAt > task.updatedAt) {
         console.log('createdAt > updatedAt');
         throw new ConflictException(`duplicated id:${task.id}`);
       }
@@ -170,7 +180,7 @@ export class SyncService {
         continue;
       }
 
-      throw new ConflictException(`unknown conflict: ${task.id}`);
+      throw new ConflictException(`unknown conflict:${task.id}`);
     }
     return tasks;
   }
