@@ -34,8 +34,8 @@ export class SyncService {
         throw new ConflictException(`duplicated id:${category.id}`);
       }
 
-      if (categoryDto.createdAt != category.createdAt) {
-        console.log('createdAt > updatedAt');
+      if (categoryDto.createdAt.valueOf() !== category.createdAt.valueOf()) {
+        console.log('createdAt !== updatedAt');
         throw new ConflictException(`duplicated id:${category.id}`);
       }
 
@@ -124,8 +124,9 @@ export class SyncService {
         throw new ConflictException(`duplicated id:${task.id}`);
       }
 
-      if (taskDto.createdAt != task.createdAt) {
-        console.log('createdAt > updatedAt');
+      console.log(taskDto.createdAt.valueOf(), task.createdAt.valueOf());
+      if (taskDto.createdAt.valueOf() !== task.createdAt.valueOf()) {
+        console.log('createdAt !== createdAt');
         throw new ConflictException(`duplicated id:${task.id}`);
       }
 
