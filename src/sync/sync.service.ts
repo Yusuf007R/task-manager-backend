@@ -34,6 +34,11 @@ export class SyncService {
         throw new ConflictException(`duplicated id:${category.id}`);
       }
 
+      if (categoryDto.createdAt != category.createdAt) {
+        console.log('createdAt > updatedAt');
+        throw new ConflictException(`duplicated id:${category.id}`);
+      }
+
       if (categoryDto.createdAt > category.updatedAt) {
         console.log('createdAt > updatedAt');
         throw new ConflictException(`duplicated id:${category.id}`);
