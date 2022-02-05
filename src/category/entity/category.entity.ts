@@ -20,7 +20,7 @@ export class Category {
   name: string;
 
   @ApiProperty()
-  @Column({ type: 'int' })
+  @Column({ type: 'bigint' })
   color: number;
 
   @ApiProperty({ type: () => User })
