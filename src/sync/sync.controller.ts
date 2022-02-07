@@ -1,50 +1,23 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseArrayPipe,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
+import { ApiResponse } from '@nestjs/swagger';
 import { GetUser } from 'src/user/decorator/get-user.decorator';
 import { User } from 'src/user/entity/user.entity';
-import { SyncCategoryDto } from './dto/sync-categorie.dto';
-import { SyncDateDto } from './dto/sync-date.dto';
-import { SyncTaskDto } from './dto/sync-task.dto';
+import { SyncResponseDto } from './dto/sync-response.dto';
+import { SyncDto } from './dto/sync.dto';
 import { SyncService } from './sync.service';
 
 @Controller('sync')
 export class SyncController {
   constructor(private readonly syncService: SyncService) {}
 
-  @Post('categories')
-  async syncCategories(
-    @Body(new ParseArrayPipe({ items: SyncCategoryDto }))
-    body: SyncCategoryDto[],
-    @GetUser() user: User,
-  ) {
-    return await this.syncService.syncCategories(body, user);
-  }
-
-  @Post('tasks')
-  async syncTaks(
-    @Body(new ParseArrayPipe({ items: SyncTaskDto }))
-    body: SyncTaskDto[],
-    @GetUser() user: User,
-  ) {
-    return await this.syncService.syncTask(body, user);
-  }
-
-  @Get('tasks/:date')
-  async syncUploadTaks(@Param() params: SyncDateDto, @GetUser() user: User) {
-    return await this.syncService.uploadSyncTask(params.date, user);
-  }
-
-  @Get('categories/:date')
-  async syncUploadCategories(
-    @Param() params: SyncDateDto,
-    @GetUser() user: User,
-  ) {
-    return await this.syncService.uploadSyncCategory(params.date, user);
+  @ApiResponse({ type: SyncResponseDto })
+  @Post()
+  async create(@Body() dto: SyncDto, @GetUser() user: User) {
+    await this.syncService.syncCategories(dto.categories, user);
+    await this.syncService.syncTask(dto.tasks, user);
+    return {
+      tasks: await this.syncService.uploadSyncTask(dto.lastSync, user),
+      categories: await this.syncService.uploadSyncCategory(dto.lastSync, user),
+    };
   }
 }
