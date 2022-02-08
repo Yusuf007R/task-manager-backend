@@ -13,11 +13,13 @@ export class SyncController {
   @ApiResponse({ type: SyncResponseDto })
   @Post()
   async create(@Body() dto: SyncDto, @GetUser() user: User) {
-    await this.syncService.syncCategories(dto.categories, user);
-    await this.syncService.syncTask(dto.tasks, user);
+    if (dto.categories)
+      await this.syncService.syncCategories(dto.categories, user);
+    if (dto.tasks) await this.syncService.syncTask(dto.tasks, user);
+    const date = dto.lastSync || new Date(0);
     return {
-      tasks: await this.syncService.uploadSyncTask(dto.lastSync, user),
-      categories: await this.syncService.uploadSyncCategory(dto.lastSync, user),
+      tasks: await this.syncService.uploadSyncTask(date, user),
+      categories: await this.syncService.uploadSyncCategory(date, user),
     };
   }
 }

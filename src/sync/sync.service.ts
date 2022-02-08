@@ -124,7 +124,6 @@ export class SyncService {
         throw new ConflictException(`duplicated task id:${task.id}`);
       }
 
-      console.log(taskDto.createdAt.valueOf(), task.createdAt.valueOf());
       if (taskDto.createdAt.valueOf() !== task.createdAt.valueOf()) {
         console.log('createdAt !== createdAt');
         throw new ConflictException(`duplicated task id:${task.id}`);

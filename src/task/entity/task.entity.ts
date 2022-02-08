@@ -39,12 +39,12 @@ export class Task {
     onDelete: 'SET NULL',
     cascade: true,
   })
-  @JoinColumn()
+  @JoinColumn({ name: 'categoryId' })
   @Index()
   category: Category;
 
   @ApiProperty()
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'categoryId' })
   categoryId: string;
 
   @ApiProperty({ type: () => User })

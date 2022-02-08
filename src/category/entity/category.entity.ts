@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { User } from 'src/user/entity/user.entity';
 import {
   Column,
@@ -21,6 +22,7 @@ export class Category {
 
   @ApiProperty()
   @Column({ type: 'bigint' })
+  @Type(() => Number)
   color: number;
 
   @ApiProperty({ type: () => User })

@@ -146,7 +146,7 @@ export class TaskService {
       );
       if (category) task.category = category;
     }
-    if (updateTaskDto.categoryId === null) task.category = null;
+    if (updateTaskDto.categoryId === null) task.category = undefined;
     return await this.taskRepository.save({
       ...task,
       ...updateTaskDto,
@@ -163,6 +163,7 @@ export class TaskService {
     const task = await this.taskRepository.findOne({
       where: { id, userId },
       withDeleted: true,
+
       relations: ['category', 'user'],
     });
     if (!task) throw new NotFoundException('task not found');
@@ -171,14 +172,16 @@ export class TaskService {
         updateTaskDto.categoryId,
         userId,
       );
-      if (category) task.category = category;
+      if (!category) throw new NotFoundException('category not found');
+      task.category = category;
     }
-    if (updateTaskDto.categoryId === null) task.category = null;
+
+    if (updateTaskDto.categoryId === null) {
+      task.category = undefined;
+    }
+
     if (undeleting) task.deletedAt = null;
-    return await this.taskRepository.save({
-      ...task,
-      ...updateTaskDto,
-    });
+    return await this.taskRepository.save({ ...task, ...updateTaskDto });
   }
 
   async remove(
