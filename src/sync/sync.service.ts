@@ -31,17 +31,17 @@ export class SyncService {
       }
       if (category.userId !== user.id) {
         console.log('category.userId !== user.id');
-        throw new ConflictException(`duplicated id:${category.id}`);
+        throw new ConflictException(`duplicated category id:${category.id}`);
       }
 
       if (categoryDto.createdAt.valueOf() !== category.createdAt.valueOf()) {
         console.log('createdAt !== updatedAt');
-        throw new ConflictException(`duplicated id:${category.id}`);
+        throw new ConflictException(`duplicated category id:${category.id}`);
       }
 
       if (categoryDto.createdAt > category.updatedAt) {
         console.log('createdAt > updatedAt');
-        throw new ConflictException(`duplicated id:${category.id}`);
+        throw new ConflictException(`duplicated category id:${category.id}`);
       }
 
       if (categoryDto.deletedAt) {
@@ -121,18 +121,18 @@ export class SyncService {
       }
       if (task.userId !== user.id) {
         console.log('task.userId !== user.id');
-        throw new ConflictException(`duplicated id:${task.id}`);
+        throw new ConflictException(`duplicated task id:${task.id}`);
       }
 
       console.log(taskDto.createdAt.valueOf(), task.createdAt.valueOf());
       if (taskDto.createdAt.valueOf() !== task.createdAt.valueOf()) {
         console.log('createdAt !== createdAt');
-        throw new ConflictException(`duplicated id:${task.id}`);
+        throw new ConflictException(`duplicated task id:${task.id}`);
       }
 
       if (taskDto.createdAt > task.updatedAt) {
         console.log('createdAt > updatedAt');
-        throw new ConflictException(`duplicated id:${task.id}`);
+        throw new ConflictException(`duplicated task id:${task.id}`);
       }
 
       if (taskDto.deletedAt) {
