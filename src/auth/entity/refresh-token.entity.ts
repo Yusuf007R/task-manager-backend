@@ -34,6 +34,10 @@ export class RefreshToken {
   @Column()
   ipAddress: string;
 
+  @ApiProperty()
+  @Column({ nullable: true })
+  FCM: string;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

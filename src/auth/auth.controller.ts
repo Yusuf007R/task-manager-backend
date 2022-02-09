@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  InternalServerErrorException,
   NotFoundException,
   Param,
   Post,
@@ -38,6 +39,7 @@ import {
   verifyPasswordCodeDto,
 } from './dto/codes.dot';
 import { GetIp } from 'src/helper/decorator/get-ip.decorator';
+import { GetRefreshToken } from './decorator/get-refresh-token';
 
 @Controller('auth')
 export class AuthController {
@@ -69,11 +71,17 @@ export class AuthController {
   async getNewAccessToken(
     @GetUser() user: User,
     @GetIp() ip: string,
-    @GetJwt() jwtToken: string,
+    @GetRefreshToken() refreshToken: RefreshToken,
   ) {
-    await this.authService.updateRefreshToken(jwtToken, ip);
+    const updatedRefreshToken = await this.authService.updateRefreshToken(
+      refreshToken,
+      ip,
+    );
     return {
-      accessToken: await this.authService.generateAccessToken(user),
+      accessToken: await this.authService.generateAccessToken(
+        user,
+        updatedRefreshToken.id,
+      ),
     };
   }
 
@@ -136,14 +144,25 @@ export class AuthController {
   @Post('verify-account-code')
   @ApiResponse({ type: AccessResponseDto })
   @UseGuards(JwtAccessNotVerifiedAuthGuard)
-  async verifyAccountCode(@GetUser() user: User, @Body() body: verifyCodeDto) {
+  async verifyAccountCode(
+    @GetUser() user: User,
+    @Body() body: verifyCodeDto,
+    @GetJwt() accessToken: string,
+  ) {
     await this.authService.verifyCode(user, body.code);
     user.verified = true;
     await this.userService.updateUserInstance(user);
+    const tokenPayload = this.authService.getJwtPayload(accessToken, 'access');
+    if (typeof tokenPayload === 'string')
+      throw new InternalServerErrorException();
     return {
-      accessToken: await this.authService.generateAccessToken(user),
+      accessToken: await this.authService.generateAccessToken(
+        user,
+        tokenPayload.sessionId,
+      ),
     };
   }
+
   @SetPublic()
   @Post('send-password-reset-code')
   @ApiResponse({ type: MessageResponseDto })
@@ -188,5 +207,17 @@ export class AuthController {
     @Param('sessionId') sessionId: string,
   ) {
     return this.authService.revokeSession(user, sessionId);
+  }
+
+  @Post('set-fcm-token/:fcmToken')
+  @ApiResponse({ type: RefreshToken })
+  @SetPublic()
+  @UseGuards(JwtRefreshAuthGuard)
+  async updatedFCMToken(
+    @GetUser() user: User,
+    @Param('fcmToken') fcmToken: string,
+    @GetRefreshToken() RefreshToken: RefreshToken,
+  ) {
+    return this.authService.updateFCMToken(RefreshToken, fcmToken);
   }
 }

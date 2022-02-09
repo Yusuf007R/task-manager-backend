@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
+
 import { User } from 'src/user/entity/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import { DeepPartial, MoreThan, Repository } from 'typeorm';
@@ -48,27 +49,25 @@ export class AuthService {
   }
 
   async login(user: User, ip: string) {
+    const refreshToken = await this.generateRefreshToken(user, ip);
     return {
-      accessToken: await this.generateAccessToken(user),
-      refreshToken: await this.generateRefreshToken(user, ip),
+      accessToken: await this.generateAccessToken(user, refreshToken.id),
+      refreshToken: refreshToken.token,
     };
   }
 
-  async updateRefreshToken(jwt: string, ip: string) {
-    const token = await this.refreshTokenRepository.findOne({
-      where: { token: jwt },
-    });
-    if (!token) throw new UnauthorizedException('token not found');
-    token.ipAddress = ip;
-    token.lastTimeOfUse = new Date();
-    return await this.refreshTokenRepository.save(token);
+  async updateRefreshToken(refreshToken: RefreshToken, ip: string) {
+    refreshToken.ipAddress = ip;
+    refreshToken.lastTimeOfUse = new Date();
+    return await this.refreshTokenRepository.save(refreshToken);
   }
 
-  async generateAccessToken(user: User) {
+  async generateAccessToken(user: User, sessionId: number) {
     return await this.jwtAccess.signAsync({
       id: user.id,
       verified: user.verified,
       type: 'access',
+      sessionId,
     });
   }
 
@@ -86,14 +85,14 @@ export class AuthService {
       verified: user.verified,
       type: 'refresh',
     });
+
     const refreshToken = this.refreshTokenRepository.create({
       token,
       user,
       lastTimeOfUse: new Date(),
       ipAddress: ip,
     });
-    await this.refreshTokenRepository.save(refreshToken);
-    return token;
+    return await this.refreshTokenRepository.save(refreshToken);
   }
 
   async register(user: DeepPartial<User>, ip: string) {
@@ -169,12 +168,20 @@ export class AuthService {
 
   async getActiveSessions(user: User) {
     const tokenDB = await this.refreshTokenRepository.find({ where: { user } });
-
-    return tokenDB.map((token) => ({
-      ip: token.ipAddress,
-      lastTimeOfUse: token.lastTimeOfUse,
-      sessionId: token.id,
-    }));
+    const sessions = [];
+    for (const token of tokenDB) {
+      const response = await this.httpService.get(
+        `https://ipapi.co/${token.ipAddress}/json/`,
+      );
+      const location = response?.data?.error ? null : response?.data;
+      sessions.push({
+        ip: token.ipAddress,
+        lastTimeOfUse: token.lastTimeOfUse,
+        sessionId: token.id,
+        location: location,
+      });
+    }
+    return sessions;
   }
 
   async revokeSession(user: User, sessionId: string) {
@@ -184,5 +191,20 @@ export class AuthService {
 
     if (!tokenDB) throw new NotFoundException('session not found');
     return await this.refreshTokenRepository.remove(tokenDB);
+  }
+
+  getJwtPayload(token: string, type: 'access' | 'refresh') {
+    return type == 'access'
+      ? this.jwtAccess.decode(token)
+      : this.jwtRefresh.decode(token);
+  }
+
+  async getRefreshToken(id: number) {
+    return await this.refreshTokenRepository.findOne({ id });
+  }
+
+  async updateFCMToken(refreshToken: RefreshToken, fcmToken: string) {
+    refreshToken.FCM = fcmToken;
+    return await this.refreshTokenRepository.save(refreshToken);
   }
 }
