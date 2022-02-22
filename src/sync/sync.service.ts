@@ -1,6 +1,12 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
+import { AuthService } from 'src/auth/auth.service';
 import { CategoryService } from 'src/category/category.service';
 import { Category } from 'src/category/entity/category.entity';
+import { FirebaseService } from 'src/firebase/firebase.service';
 import { Task } from 'src/task/entity/task.entity';
 import { TaskService } from 'src/task/task.service';
 import { User } from 'src/user/entity/user.entity';
@@ -12,6 +18,8 @@ export class SyncService {
   constructor(
     private readonly categoryService: CategoryService,
     private readonly taskService: TaskService,
+    private readonly authService: AuthService,
+    private readonly firebaseService: FirebaseService,
   ) {}
 
   async syncCategories(createCategoryDtos: SyncCategoryDto[], user: User) {
@@ -191,5 +199,20 @@ export class SyncService {
 
   async uploadSyncCategory(date: Date, user: User) {
     return await this.categoryService.syncFind(date, user.id);
+  }
+
+  async sendNewDataNotify(jwt: string, user: User) {
+    const jwtPayload = this.authService.getJwtPayload(jwt, 'access');
+    if (typeof jwtPayload === 'string')
+      throw new BadRequestException('invalid jwt');
+    const refreshToken = this.authService.getRefreshToken(jwtPayload.sessionId);
+
+    const fcmTokens = await this.authService.getUserFCMtokens(
+      user,
+      (
+        await refreshToken
+      ).FCM,
+    );
+    return await this.firebaseService.sendNewDataNotify(fcmTokens);
   }
 }

@@ -163,7 +163,6 @@ export class TaskService {
     const task = await this.taskRepository.findOne({
       where: { id, userId },
       withDeleted: true,
-
       relations: ['category', 'user'],
     });
     if (!task) throw new NotFoundException('task not found');

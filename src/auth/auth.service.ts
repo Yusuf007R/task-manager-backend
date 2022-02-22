@@ -11,7 +11,7 @@ import * as bcrypt from 'bcrypt';
 
 import { User } from 'src/user/entity/user.entity';
 import { JwtService } from '@nestjs/jwt';
-import { DeepPartial, MoreThan, Repository } from 'typeorm';
+import { DeepPartial, MoreThan, Not, Repository } from 'typeorm';
 import LoginDto from './dto/login.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RefreshToken } from './entity/refresh-token.entity';
@@ -201,6 +201,17 @@ export class AuthService {
 
   async getRefreshToken(id: number) {
     return await this.refreshTokenRepository.findOne({ id });
+  }
+
+  async getUserFCMtokens(user: User, excludedToken: string) {
+    const refreshTokens = await this.refreshTokenRepository
+      .createQueryBuilder('RefreshToken')
+      .where('RefreshToken.userId = :userId', { userId: user.id })
+      .andWhere('RefreshToken.FCM != :fcm', { fcm: excludedToken })
+      .andWhere('RefreshToken.FCM is not null')
+      .getMany();
+
+    return refreshTokens.map((token) => token.FCM);
   }
 
   async updateFCMToken(refreshToken: RefreshToken, fcmToken: string) {

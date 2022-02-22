@@ -13,6 +13,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAccessAuthGuard } from './auth/guard/jwt-access-auth.guard';
 import { CategoryModule } from './category/category.module';
 import { SyncModule } from './sync/sync.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Global()
 @Module({
@@ -40,6 +41,7 @@ import { SyncModule } from './sync/sync.module';
     TaskModule,
     CategoryModule,
     SyncModule,
+    FirebaseModule,
   ],
   controllers: [AppController],
   providers: [
