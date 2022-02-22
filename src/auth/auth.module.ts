@@ -8,7 +8,7 @@ import { JwtAccessStrategy } from './strategy/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategy/jwt-refresh.strategy';
 import { JwtAccessModule } from 'src/auth/jwt-modules/jwt-access.module';
 import { JwtRefreshModule } from 'src/auth/jwt-modules/jwt-refresh.module';
-import { RefreshToken } from './entity/refresh-token.entity';
+import { Session } from './entity/session.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { VerificationCode } from './entity/verification.code.entity';
 import { JwtAccessNotVerifiedStrategy } from './strategy/jwt-access-not-verified.strategy';
@@ -28,7 +28,7 @@ import { HttpModule } from 'nestjs-http-promise';
     JwtPasswordModule,
     MailModule,
     HttpModule,
-    TypeOrmModule.forFeature([RefreshToken, VerificationCode]),
+    TypeOrmModule.forFeature([Session, VerificationCode]),
   ],
   providers: [
     AuthService,

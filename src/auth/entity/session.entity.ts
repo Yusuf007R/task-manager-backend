@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 
 @Entity()
-export class RefreshToken {
+export class Session {
   @ApiProperty()
   @PrimaryGeneratedColumn()
   id: number;

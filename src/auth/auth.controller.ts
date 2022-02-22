@@ -27,7 +27,7 @@ import {
   GetActiveSessionDto,
   MessageResponseDto,
 } from './dto/responses.dto';
-import { RefreshToken } from './entity/refresh-token.entity';
+import { Session } from './entity/session.entity';
 import { JwtPasswordAuthGuard } from './guard/jwt-password-auth.guard';
 import {
   changeForgotPasswordDto,
@@ -40,6 +40,7 @@ import {
 } from './dto/codes.dot';
 import { GetIp } from 'src/helper/decorator/get-ip.decorator';
 import { GetRefreshToken } from './decorator/get-refresh-token';
+import { TokenType } from './entity/verification.code.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -71,7 +72,7 @@ export class AuthController {
   async getNewAccessToken(
     @GetUser() user: User,
     @GetIp() ip: string,
-    @GetRefreshToken() refreshToken: RefreshToken,
+    @GetRefreshToken() refreshToken: Session,
   ) {
     const updatedRefreshToken = await this.authService.updateRefreshToken(
       refreshToken,
@@ -85,7 +86,7 @@ export class AuthController {
     };
   }
 
-  @ApiResponse({ type: RefreshToken })
+  @ApiResponse({ type: Session })
   @SetPublic()
   @UseGuards(JwtRefreshAuthGuard)
   @Post('logout')
@@ -93,7 +94,7 @@ export class AuthController {
     return this.authService.logoutOne(jwtToken);
   }
 
-  @ApiResponse({ type: [RefreshToken] })
+  @ApiResponse({ type: [Session] })
   @SetPublic()
   @UseGuards(JwtRefreshAuthGuard)
   @Post('logout/all')
@@ -130,7 +131,10 @@ export class AuthController {
   @ApiResponse({ type: MessageResponseDto })
   @UseGuards(JwtAccessNotVerifiedAuthGuard)
   async sendAccountVerificationCode(@GetUser() user: User) {
-    const verificationCode = await this.authService.getVerificationCode(user);
+    const verificationCode = await this.authService.getVerificationCode(
+      user,
+      TokenType.emailVerificationCode,
+    );
     await this.mailService.sendVerificationCode(
       user.email,
       verificationCode.code,
@@ -149,7 +153,11 @@ export class AuthController {
     @Body() body: verifyCodeDto,
     @GetJwt() accessToken: string,
   ) {
-    await this.authService.verifyCode(user, body.code);
+    await this.authService.verifyCode(
+      user,
+      body.code,
+      TokenType.emailVerificationCode,
+    );
     user.verified = true;
     await this.userService.updateUserInstance(user);
     const tokenPayload = this.authService.getJwtPayload(accessToken, 'access');
@@ -171,7 +179,7 @@ export class AuthController {
     if (!user) throw new NotFoundException('User not found');
     const verificationCode = await this.authService.getVerificationCode(
       user,
-      true,
+      TokenType.passwordResetCode,
     );
     await this.mailService.sendVerificationCode(
       body.email,
@@ -188,7 +196,11 @@ export class AuthController {
   async verifyPasswordCode(@Body() body: verifyPasswordCodeDto) {
     const user = await this.userService.findUserByEmail(body.email);
     if (!user) throw new NotFoundException('User not found');
-    await this.authService.verifyCode(user, body.code, true);
+    await this.authService.verifyCode(
+      user,
+      body.code,
+      TokenType.passwordResetCode,
+    );
     return {
       accessToken: await this.authService.generatePasswordToken(user),
     };
@@ -201,7 +213,7 @@ export class AuthController {
   }
 
   @Post('logout-by-session-id/:sessionId')
-  @ApiResponse({ type: RefreshToken })
+  @ApiResponse({ type: Session })
   async LogoutBySessionId(
     @GetUser() user: User,
     @Param('sessionId') sessionId: string,
@@ -210,14 +222,52 @@ export class AuthController {
   }
 
   @Post('set-fcm-token/:fcmToken')
-  @ApiResponse({ type: RefreshToken })
+  @ApiResponse({ type: Session })
   @SetPublic()
   @UseGuards(JwtRefreshAuthGuard)
   async updatedFCMToken(
-    @GetUser() user: User,
     @Param('fcmToken') fcmToken: string,
-    @GetRefreshToken() RefreshToken: RefreshToken,
+    @GetRefreshToken() RefreshToken: Session,
   ) {
     return this.authService.updateFCMToken(RefreshToken, fcmToken);
+  }
+
+  @Post('send-change-email-code')
+  @ApiResponse({ type: MessageResponseDto })
+  async sendChangeEmailCode(
+    @Body() body: sendPasswordCodeDto,
+    @GetUser() user: User,
+  ) {
+    if (!user) throw new NotFoundException('User not found');
+    const verificationCode = await this.authService.getVerificationCode(
+      user,
+      TokenType.changeEmailCode,
+      body.email,
+    );
+    await this.mailService.sendVerificationCode(
+      body.email,
+      verificationCode.code,
+    );
+    return {
+      message: 'Verification code sent',
+    };
+  }
+
+  @Post('verify-change-email-code')
+  @ApiResponse({ type: User })
+  async verifyChangeEmailCode(
+    @Body() body: verifyCodeDto,
+    @GetUser() user: User,
+  ) {
+    if (!user) throw new NotFoundException('User not found');
+    const code = await this.authService.verifyCode(
+      user,
+      body.code,
+      TokenType.changeEmailCode,
+    );
+    if (Array.isArray(code)) throw new InternalServerErrorException();
+
+    user.email = code.email;
+    return await this.userService.updateUserInstance(user);
   }
 }

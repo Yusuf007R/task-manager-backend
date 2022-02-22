@@ -11,11 +11,11 @@ import * as bcrypt from 'bcrypt';
 
 import { User } from 'src/user/entity/user.entity';
 import { JwtService } from '@nestjs/jwt';
-import { DeepPartial, MoreThan, Not, Repository } from 'typeorm';
+import { DeepPartial, MoreThan, Repository } from 'typeorm';
 import LoginDto from './dto/login.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { RefreshToken } from './entity/refresh-token.entity';
-import { VerificationCode } from './entity/verification.code.entity';
+import { Session } from './entity/session.entity';
+import { TokenType, VerificationCode } from './entity/verification.code.entity';
 import { HelperService } from 'src/helper/helper.service';
 import { HttpService } from 'nestjs-http-promise';
 
@@ -27,8 +27,8 @@ export class AuthService {
     @Inject('JwtAccess') private jwtAccess: JwtService,
     @Inject('JwtRefresh') private jwtRefresh: JwtService,
     @Inject('JwtPassword') private jwtPassword: JwtService,
-    @InjectRepository(RefreshToken)
-    private refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(Session)
+    private sessionRepository: Repository<Session>,
     @InjectRepository(VerificationCode)
     private verificationTokenRepository: Repository<VerificationCode>,
     private httpService: HttpService,
@@ -56,10 +56,10 @@ export class AuthService {
     };
   }
 
-  async updateRefreshToken(refreshToken: RefreshToken, ip: string) {
+  async updateRefreshToken(refreshToken: Session, ip: string) {
     refreshToken.ipAddress = ip;
     refreshToken.lastTimeOfUse = new Date();
-    return await this.refreshTokenRepository.save(refreshToken);
+    return await this.sessionRepository.save(refreshToken);
   }
 
   async generateAccessToken(user: User, sessionId: number) {
@@ -86,13 +86,13 @@ export class AuthService {
       type: 'refresh',
     });
 
-    const refreshToken = this.refreshTokenRepository.create({
+    const refreshToken = this.sessionRepository.create({
       token,
       user,
       lastTimeOfUse: new Date(),
       ipAddress: ip,
     });
-    return await this.refreshTokenRepository.save(refreshToken);
+    return await this.sessionRepository.save(refreshToken);
   }
 
   async register(user: DeepPartial<User>, ip: string) {
@@ -113,25 +113,25 @@ export class AuthService {
   }
 
   async logoutOne(token: string) {
-    const tokenDB = await this.refreshTokenRepository.findOne({
+    const tokenDB = await this.sessionRepository.findOne({
       where: { token },
     });
-    return await this.refreshTokenRepository.remove(tokenDB);
+    return await this.sessionRepository.remove(tokenDB);
   }
 
   async logoutAll(user: User) {
-    const tokenDB = await this.refreshTokenRepository.find({ where: { user } });
-    return await this.refreshTokenRepository.remove(tokenDB);
+    const tokenDB = await this.sessionRepository.find({ where: { user } });
+    return await this.sessionRepository.remove(tokenDB);
   }
 
-  async getVerificationCode(user: User, isPasswordResetCode = false) {
-    if (user.verified && !isPasswordResetCode)
+  async getVerificationCode(user: User, tokenType: TokenType, email?: string) {
+    if (user.verified && tokenType === TokenType.emailVerificationCode)
       throw new ForbiddenException('user already verified');
     const date = this.helperService.generateDatePlusMins(-2);
     const userCode = await this.verificationTokenRepository.findOne({
       where: {
         user,
-        isPasswordResetCode,
+        tokenType,
         createdAt: MoreThan(date),
       },
     });
@@ -144,16 +144,17 @@ export class AuthService {
     const verificationCode = this.verificationTokenRepository.create({
       code: code,
       user,
-      isPasswordResetCode: isPasswordResetCode,
+      tokenType,
+      email: email || user.email,
     });
     return await this.verificationTokenRepository.save(verificationCode);
   }
 
-  async verifyCode(user: User, code: string, isPasswordResetCode = false) {
-    if (user.verified && !isPasswordResetCode)
+  async verifyCode(user: User, code: string, tokenType: TokenType) {
+    if (user.verified && tokenType === TokenType.emailVerificationCode)
       throw new ForbiddenException('user already verified');
     const verificationCode = await this.verificationTokenRepository.findOne({
-      where: { user, code, isPasswordResetCode },
+      where: { user, code, tokenType },
     });
     if (!verificationCode) throw new UnauthorizedException('invalid code');
     const date = this.helperService.generateDatePlusMins(-5);
@@ -161,13 +162,17 @@ export class AuthService {
       throw new UnauthorizedException('expired code');
     }
     const codes = await this.verificationTokenRepository.find({
-      where: { user, isPasswordResetCode },
+      where: { user, tokenType },
     });
-    return await this.verificationTokenRepository.remove(codes);
+    if (tokenType != TokenType.changeEmailCode)
+      return await this.verificationTokenRepository.remove(codes);
+
+    await this.verificationTokenRepository.remove(codes);
+    return verificationCode;
   }
 
   async getActiveSessions(user: User) {
-    const tokenDB = await this.refreshTokenRepository.find({ where: { user } });
+    const tokenDB = await this.sessionRepository.find({ where: { user } });
     const sessions = [];
     for (const token of tokenDB) {
       const response = await this.httpService.get(
@@ -185,12 +190,12 @@ export class AuthService {
   }
 
   async revokeSession(user: User, sessionId: string) {
-    const tokenDB = await this.refreshTokenRepository.findOne({
+    const tokenDB = await this.sessionRepository.findOne({
       where: { id: sessionId, user },
     });
 
     if (!tokenDB) throw new NotFoundException('session not found');
-    return await this.refreshTokenRepository.remove(tokenDB);
+    return await this.sessionRepository.remove(tokenDB);
   }
 
   getJwtPayload(token: string, type: 'access' | 'refresh') {
@@ -200,11 +205,11 @@ export class AuthService {
   }
 
   async getRefreshToken(id: number) {
-    return await this.refreshTokenRepository.findOne({ id });
+    return await this.sessionRepository.findOne({ id });
   }
 
   async getUserFCMtokens(user: User, excludedToken: string) {
-    const refreshTokens = await this.refreshTokenRepository
+    const refreshTokens = await this.sessionRepository
       .createQueryBuilder('RefreshToken')
       .where('RefreshToken.userId = :userId', { userId: user.id })
       .andWhere('RefreshToken.FCM != :fcm', { fcm: excludedToken })
@@ -214,8 +219,8 @@ export class AuthService {
     return refreshTokens.map((token) => token.FCM);
   }
 
-  async updateFCMToken(refreshToken: RefreshToken, fcmToken: string) {
+  async updateFCMToken(refreshToken: Session, fcmToken: string) {
     refreshToken.FCM = fcmToken;
-    return await this.refreshTokenRepository.save(refreshToken);
+    return await this.sessionRepository.save(refreshToken);
   }
 }

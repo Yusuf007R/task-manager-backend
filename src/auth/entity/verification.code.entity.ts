@@ -9,6 +9,12 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+export enum TokenType {
+  passwordResetCode,
+  emailVerificationCode,
+  changeEmailCode,
+}
+
 @Entity()
 export class VerificationCode {
   @PrimaryGeneratedColumn()
@@ -17,8 +23,15 @@ export class VerificationCode {
   @Column()
   code: string;
 
-  @Column({ default: false })
-  isPasswordResetCode: boolean;
+  @Column()
+  email: string;
+
+  @Column({
+    type: 'enum',
+    enum: TokenType,
+    default: TokenType.emailVerificationCode,
+  })
+  tokenType: TokenType;
 
   @ManyToOne(() => User)
   @JoinColumn()

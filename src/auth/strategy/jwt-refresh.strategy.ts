@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Repository } from 'typeorm';
-import { RefreshToken } from '../entity/refresh-token.entity';
+import { Session } from '../entity/session.entity';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -14,8 +14,8 @@ export class JwtRefreshStrategy extends PassportStrategy(
 ) {
   constructor(
     private configService: ConfigService,
-    @InjectRepository(RefreshToken)
-    private refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(Session)
+    private sessionRepository: Repository<Session>,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -27,7 +27,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
   async validate(req: any, payload: any) {
     const tokenHeader = req.headers.authorization;
     const token = tokenHeader.replace('Bearer ', '');
-    const refreshToken = await this.refreshTokenRepository.findOne({
+    const refreshToken = await this.sessionRepository.findOne({
       where: { token },
     });
     if (!refreshToken) throw new UnauthorizedException();
