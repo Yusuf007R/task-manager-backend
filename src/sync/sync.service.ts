@@ -213,6 +213,6 @@ export class SyncService {
         await refreshToken
       ).FCM,
     );
-    return await this.firebaseService.sendNewDataNotify(fcmTokens);
+    return await this.firebaseService.sendBatchNotify(fcmTokens, 'new-data');
   }
 }

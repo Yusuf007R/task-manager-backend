@@ -17,6 +17,8 @@ import { MailModule } from 'src/mail/mail.module';
 import { JwtPasswordModule } from './jwt-modules/jwt-password.module';
 import { JwtPasswordStrategy } from './strategy/jwt-password.strategy';
 import { HttpModule } from 'nestjs-http-promise';
+import { GeoLocation } from './entity/geoLocation.entity';
+import { FirebaseModule } from 'src/firebase/firebase.module';
 
 @Global()
 @Module({
@@ -28,7 +30,8 @@ import { HttpModule } from 'nestjs-http-promise';
     JwtPasswordModule,
     MailModule,
     HttpModule,
-    TypeOrmModule.forFeature([Session, VerificationCode]),
+    FirebaseModule,
+    TypeOrmModule.forFeature([Session, VerificationCode, GeoLocation]),
   ],
   providers: [
     AuthService,

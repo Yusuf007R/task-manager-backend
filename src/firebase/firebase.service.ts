@@ -16,13 +16,14 @@ export class FirebaseService {
     });
   }
 
-  async sendNewDataNotify(tokens: string[]) {
-    console.log(tokens);
-
+  async sendBatchNotify(
+    tokens: string[],
+    type: 'new-data' | 'logout' | 'new-user-data',
+  ) {
     try {
       if (tokens.length === 0) return false;
       const payload: MulticastMessage = {
-        data: { type: 'new-data' },
+        data: { type },
         tokens: tokens,
       };
       console.log(await admin.messaging().sendMulticast(payload));

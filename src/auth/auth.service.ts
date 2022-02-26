@@ -18,6 +18,9 @@ import { Session } from './entity/session.entity';
 import { TokenType, VerificationCode } from './entity/verification.code.entity';
 import { HelperService } from 'src/helper/helper.service';
 import { HttpService } from 'nestjs-http-promise';
+import { GeoLocation } from './entity/geoLocation.entity';
+import { location } from './dto/location.dto';
+import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Injectable()
 export class AuthService {
@@ -31,7 +34,10 @@ export class AuthService {
     private sessionRepository: Repository<Session>,
     @InjectRepository(VerificationCode)
     private verificationTokenRepository: Repository<VerificationCode>,
+    @InjectRepository(GeoLocation)
+    private geoLocationRepository: Repository<GeoLocation>,
     private httpService: HttpService,
+    private readonly firebaseService: FirebaseService,
   ) {}
 
   async validateLocal(userData: LoginDto, ip) {
@@ -57,8 +63,10 @@ export class AuthService {
   }
 
   async updateRefreshToken(refreshToken: Session, ip: string) {
+    const geoLocation = await this.getGeoLocation(ip);
     refreshToken.ipAddress = ip;
     refreshToken.lastTimeOfUse = new Date();
+    refreshToken.geoLocation = geoLocation;
     return await this.sessionRepository.save(refreshToken);
   }
 
@@ -69,6 +77,52 @@ export class AuthService {
       type: 'access',
       sessionId,
     });
+  }
+
+  async getGeoLocation(ip: string) {
+    const session = await this.sessionRepository.findOne({
+      where: { ipAddress: ip },
+      relations: ['geoLocation'],
+    });
+    const geolocationDB = session.geoLocation;
+
+    if (!geolocationDB) {
+      try {
+        const response = await this.httpService.get<location>(
+          `https://ipapi.co/${ip}/json/`,
+        );
+        const location = response?.data?.error ? null : response?.data;
+        const geoLocation = this.geoLocationRepository.create({
+          city: location.city,
+          country: location.country_name,
+          lat: location.latitude,
+          lon: location.longitude,
+          countryCode: location.country_code,
+          region: location.region,
+        });
+        return await this.geoLocationRepository.save(geoLocation);
+      } catch (error) {
+        return null;
+      }
+    } else {
+      if (
+        geolocationDB.createdAt > this.helperService.generateDatePlusMins(43800)
+      ) {
+        const response = await this.httpService.get<location>(
+          `https://ipapi.co/${ip}/json/`,
+        );
+        const location = response?.data?.error ? null : response?.data;
+        return await this.geoLocationRepository.save({
+          city: location.city,
+          country: location.country_name,
+          lat: location.latitude,
+          lon: location.longitude,
+          countryCode: location.country_code,
+          region: location.region,
+        });
+      }
+      return geolocationDB;
+    }
   }
 
   async generatePasswordToken(user: User) {
@@ -121,7 +175,10 @@ export class AuthService {
 
   async logoutAll(user: User) {
     const tokenDB = await this.sessionRepository.find({ where: { user } });
-    return await this.sessionRepository.remove(tokenDB);
+    const removed = await this.sessionRepository.remove(tokenDB);
+    const fcmTokens = await this.getUserFCMtokens(user);
+    await this.firebaseService.sendBatchNotify(fcmTokens, 'logout');
+    return removed;
   }
 
   async getVerificationCode(user: User, tokenType: TokenType, email?: string) {
@@ -172,21 +229,10 @@ export class AuthService {
   }
 
   async getActiveSessions(user: User) {
-    const tokenDB = await this.sessionRepository.find({ where: { user } });
-    const sessions = [];
-    for (const token of tokenDB) {
-      const response = await this.httpService.get(
-        `https://ipapi.co/${token.ipAddress}/json/`,
-      );
-      const location = response?.data?.error ? null : response?.data;
-      sessions.push({
-        ip: token.ipAddress,
-        lastTimeOfUse: token.lastTimeOfUse,
-        sessionId: token.id,
-        location: location,
-      });
-    }
-    return sessions;
+    return await this.sessionRepository.find({
+      where: { user },
+      relations: ['geoLocation'],
+    });
   }
 
   async revokeSession(user: User, sessionId: string) {
@@ -208,19 +254,25 @@ export class AuthService {
     return await this.sessionRepository.findOne({ id });
   }
 
-  async getUserFCMtokens(user: User, excludedToken: string) {
+  async getUserFCMtokens(user: User, excludedToken?: string) {
     const refreshTokens = await this.sessionRepository
       .createQueryBuilder('RefreshToken')
       .where('RefreshToken.userId = :userId', { userId: user.id })
-      .andWhere('RefreshToken.FCM != :fcm', { fcm: excludedToken })
       .andWhere('RefreshToken.FCM is not null')
       .getMany();
 
-    return refreshTokens.map((token) => token.FCM);
+    return refreshTokens
+      .map((token) => token.FCM)
+      .filter((fcm) => fcm != excludedToken);
   }
 
   async updateFCMToken(refreshToken: Session, fcmToken: string) {
     refreshToken.FCM = fcmToken;
     return await this.sessionRepository.save(refreshToken);
+  }
+
+  async sendChangeEmailNotify(user: User) {
+    const fcmTokens = await this.getUserFCMtokens(user);
+    await this.firebaseService.sendBatchNotify(fcmTokens, 'new-user-data');
   }
 }

@@ -9,6 +9,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { GeoLocation } from './geoLocation.entity';
 
 @Entity()
 export class Session {
@@ -33,6 +34,14 @@ export class Session {
   @ApiProperty()
   @Column()
   ipAddress: string;
+
+  @ManyToOne(() => GeoLocation, {
+    cascade: true,
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn()
+  geoLocation: GeoLocation;
 
   @ApiProperty()
   @Column({ nullable: true })

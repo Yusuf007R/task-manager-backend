@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Get,
   HttpCode,
@@ -207,7 +208,7 @@ export class AuthController {
   }
 
   @Get('get-active-sessions')
-  @ApiResponse({ type: GetActiveSessionDto })
+  @ApiResponse({ type: [Session] })
   async GetActiveSessions(@GetUser() user: User) {
     return this.authService.getActiveSessions(user);
   }
@@ -238,7 +239,8 @@ export class AuthController {
     @Body() body: sendPasswordCodeDto,
     @GetUser() user: User,
   ) {
-    if (!user) throw new NotFoundException('User not found');
+    if (user.email === body.email)
+      throw new ConflictException('email is the same');
     const verificationCode = await this.authService.getVerificationCode(
       user,
       TokenType.changeEmailCode,
@@ -248,6 +250,7 @@ export class AuthController {
       body.email,
       verificationCode.code,
     );
+
     return {
       message: 'Verification code sent',
     };
@@ -268,6 +271,8 @@ export class AuthController {
     if (Array.isArray(code)) throw new InternalServerErrorException();
 
     user.email = code.email;
-    return await this.userService.updateUserInstance(user);
+    const userDb = await this.userService.updateUserInstance(user);
+    this.authService.sendChangeEmailNotify(user);
+    return userDb;
   }
 }
