@@ -25,7 +25,6 @@ import { ApiResponse } from '@nestjs/swagger';
 import {
   AccessRefreshResponseDto,
   AccessResponseDto,
-  GetActiveSessionDto,
   MessageResponseDto,
 } from './dto/responses.dto';
 import { Session } from './entity/session.entity';
