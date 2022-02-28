@@ -22,11 +22,12 @@ export class FirebaseService {
     sessionId?: number,
     extraData?: any,
   ) {
+    const filteredTokens = [...new Set(tokens)];
     try {
       if (tokens.length === 0) return false;
       const payload: MulticastMessage = {
         data: { type, ...extraData, sessionId },
-        tokens: tokens,
+        tokens: filteredTokens,
       };
       console.log(await admin.messaging().sendMulticast(payload));
     } catch (error) {
