@@ -205,14 +205,17 @@ export class SyncService {
     const jwtPayload = this.authService.getJwtPayload(jwt, 'access');
     if (typeof jwtPayload === 'string')
       throw new BadRequestException('invalid jwt');
-    const refreshToken = this.authService.getRefreshToken(jwtPayload.sessionId);
-
+    const refreshToken = await this.authService.getRefreshToken(
+      jwtPayload.sessionId,
+    );
     const fcmTokens = await this.authService.getUserFCMtokens(
       user,
-      (
-        await refreshToken
-      ).FCM,
+      refreshToken.FCM,
     );
-    return await this.firebaseService.sendBatchNotify(fcmTokens, 'new-data');
+    return await this.firebaseService.sendBatchNotify(
+      fcmTokens,
+      'new-data',
+      jwtPayload.sessionId,
+    );
   }
 }

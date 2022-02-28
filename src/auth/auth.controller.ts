@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -260,6 +261,7 @@ export class AuthController {
   async verifyChangeEmailCode(
     @Body() body: verifyCodeDto,
     @GetUser() user: User,
+    @GetJwt() jwt: string,
   ) {
     if (!user) throw new NotFoundException('User not found');
     const code = await this.authService.verifyCode(
@@ -268,10 +270,15 @@ export class AuthController {
       TokenType.changeEmailCode,
     );
     if (Array.isArray(code)) throw new InternalServerErrorException();
-
+    const jwtPayload = this.authService.getJwtPayload(jwt, 'access');
+    if (typeof jwtPayload === 'string')
+      throw new BadRequestException('invalid jwt');
+    const refreshToken = await this.authService.getRefreshToken(
+      jwtPayload.sessionId,
+    );
     user.email = code.email;
     const userDb = await this.userService.updateUserInstance(user);
-    this.authService.sendChangeEmailNotify(user);
+    this.authService.sendNewUserDataNotify(user, refreshToken.id);
     return userDb;
   }
 }

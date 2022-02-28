@@ -25,13 +25,13 @@ class ChangePasswordDto {
 
   @ApiProperty()
   @Matches('(?=.*[a-z])', undefined, {
-    message: 'new password must contain at least one lowercase letter',
+    message: 'newPassword must contain at least one lowercase letter',
   })
   @Matches('(?=.*[A-Z])', undefined, {
-    message: 'new password must contain at least one uppercase letter',
+    message: 'newPassword must contain at least one uppercase letter',
   })
   @Matches('(?=.*[0-9])', undefined, {
-    message: 'new password must contain at least one digit',
+    message: 'newPassword must contain at least one digit',
   })
   @MinLength(8)
   @MaxLength(24)

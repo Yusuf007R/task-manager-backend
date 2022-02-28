@@ -18,12 +18,14 @@ export class FirebaseService {
 
   async sendBatchNotify(
     tokens: string[],
-    type: 'new-data' | 'logout' | 'new-user-data',
+    type: 'new-data' | 'logout' | 'new-user-data' | 'new-session',
+    sessionId?: number,
+    extraData?: any,
   ) {
     try {
       if (tokens.length === 0) return false;
       const payload: MulticastMessage = {
-        data: { type },
+        data: { type, ...extraData, sessionId },
         tokens: tokens,
       };
       console.log(await admin.messaging().sendMulticast(payload));

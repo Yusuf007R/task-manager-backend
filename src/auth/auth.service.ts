@@ -64,6 +64,14 @@ export class AuthService {
 
   async updateRefreshToken(refreshToken: Session, ip: string) {
     const geoLocation = await this.getGeoLocation(ip);
+    if (refreshToken.ipAddress !== ip) {
+      if (refreshToken.geoLocation) {
+        const oldGeoLocation = await this.geoLocationRepository.findOne({
+          where: { id: refreshToken.geoLocation.id },
+        });
+        await this.geoLocationRepository.remove(oldGeoLocation);
+      }
+    }
     refreshToken.ipAddress = ip;
     refreshToken.lastTimeOfUse = new Date();
     refreshToken.geoLocation = geoLocation;
@@ -140,13 +148,21 @@ export class AuthService {
       type: 'refresh',
     });
 
+    const fcmTokens = await this.getUserFCMtokens(user);
+
     const refreshToken = this.sessionRepository.create({
       token,
       user,
       lastTimeOfUse: new Date(),
       ipAddress: ip,
     });
-    return await this.sessionRepository.save(refreshToken);
+    const session = await this.sessionRepository.save(refreshToken);
+    await this.firebaseService.sendBatchNotify(
+      fcmTokens,
+      'new-session',
+      session.id,
+    );
+    return session;
   }
 
   async register(user: DeepPartial<User>, ip: string) {
@@ -271,8 +287,12 @@ export class AuthService {
     return await this.sessionRepository.save(refreshToken);
   }
 
-  async sendChangeEmailNotify(user: User) {
+  async sendNewUserDataNotify(user: User, sessionId: number) {
     const fcmTokens = await this.getUserFCMtokens(user);
-    await this.firebaseService.sendBatchNotify(fcmTokens, 'new-user-data');
+    await this.firebaseService.sendBatchNotify(
+      fcmTokens,
+      'new-user-data',
+      sessionId,
+    );
   }
 }

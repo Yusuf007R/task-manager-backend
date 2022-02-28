@@ -29,6 +29,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
     const token = tokenHeader.replace('Bearer ', '');
     const refreshToken = await this.sessionRepository.findOne({
       where: { token },
+      relations: ['geoLocation'],
     });
     if (!refreshToken) throw new UnauthorizedException();
     req.refreshToken = refreshToken;

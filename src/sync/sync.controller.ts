@@ -22,8 +22,8 @@ export class SyncController {
       await this.syncService.syncCategories(dto.categories, user);
     if (dto.tasks) await this.syncService.syncTask(dto.tasks, user);
     const date = dto.lastSync || new Date(0);
-
-    await this.syncService.sendNewDataNotify(jwt, user);
+    if (dto.tasks || dto.categories)
+      await this.syncService.sendNewDataNotify(jwt, user);
     return {
       tasks: await this.syncService.uploadSyncTask(date, user),
       categories: await this.syncService.uploadSyncCategory(date, user),
