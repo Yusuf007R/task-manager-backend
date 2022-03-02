@@ -260,7 +260,8 @@ export class AuthService {
     const tokenDB = await this.sessionRepository.findOne({
       where: { id: sessionId, user },
     });
-
+    if (tokenDB.FCM)
+      await this.firebaseService.sendBatchNotify([tokenDB.FCM], 'logout');
     if (!tokenDB) throw new NotFoundException('session not found');
     return await this.sessionRepository.remove(tokenDB);
   }
