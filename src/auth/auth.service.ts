@@ -197,8 +197,10 @@ export class AuthService {
   async logoutAll(user: User) {
     const tokenDB = await this.sessionRepository.find({ where: { user } });
     const removed = await this.sessionRepository.remove(tokenDB);
-    const fcmTokens = await this.getUserFCMtokens(user);
-    await this.firebaseService.sendBatchNotify(fcmTokens, 'logout');
+    await this.firebaseService.sendBatchNotify(
+      tokenDB.map((token) => token.FCM),
+      'logout',
+    );
     return removed;
   }
 
