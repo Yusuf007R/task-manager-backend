@@ -44,6 +44,10 @@ export class Session {
   geoLocation: GeoLocation;
 
   @ApiProperty()
+  @Column({ nullable: true, default: 'unknown' })
+  deviceName: string;
+
+  @ApiProperty()
   @Column({ nullable: true })
   FCM: string;
 

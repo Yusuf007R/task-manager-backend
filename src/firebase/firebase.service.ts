@@ -28,6 +28,7 @@ export class FirebaseService {
       const payload: MulticastMessage = {
         data: { type, ...extraData, sessionId: sessionId?.toString() },
         tokens: filteredTokens,
+        android: { priority: 'high' },
       };
       console.log(await admin.messaging().sendMulticast(payload));
     } catch (error) {

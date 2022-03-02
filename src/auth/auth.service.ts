@@ -40,11 +40,11 @@ export class AuthService {
     private readonly firebaseService: FirebaseService,
   ) {}
 
-  async validateLocal(userData: LoginDto, ip) {
+  async validateLocal(userData: LoginDto, ip: string, deviceName: string) {
     const user = await this.userService.findUserByEmail(userData.email);
     if (!user) throw new NotFoundException('user not found');
     await this.validatePassword(user, userData.password);
-    return this.login(user, ip);
+    return this.login(user, ip, deviceName);
   }
 
   async validatePassword(user: User, password: string) {
@@ -54,15 +54,19 @@ export class AuthService {
     throw new ForbiddenException('wrong password');
   }
 
-  async login(user: User, ip: string) {
-    const refreshToken = await this.generateRefreshToken(user, ip);
+  async login(user: User, ip: string, deviceName: string) {
+    const refreshToken = await this.generateRefreshToken(user, ip, deviceName);
     return {
       accessToken: await this.generateAccessToken(user, refreshToken.id),
       refreshToken: refreshToken.token,
     };
   }
 
-  async updateRefreshToken(refreshToken: Session, ip: string) {
+  async updateRefreshToken(
+    refreshToken: Session,
+    ip: string,
+    deviceName: string,
+  ) {
     const geoLocation = await this.getGeoLocation(ip);
     if (refreshToken.ipAddress !== ip) {
       if (refreshToken.geoLocation) {
@@ -75,6 +79,7 @@ export class AuthService {
     refreshToken.ipAddress = ip;
     refreshToken.lastTimeOfUse = new Date();
     refreshToken.geoLocation = geoLocation;
+    refreshToken.deviceName = deviceName;
     return await this.sessionRepository.save(refreshToken);
   }
 
@@ -141,22 +146,22 @@ export class AuthService {
     });
   }
 
-  async generateRefreshToken(user: User, ip: string) {
+  async generateRefreshToken(user: User, ip: string, deviceName: string) {
     const token = await this.jwtRefresh.signAsync({
       id: user.id,
       verified: user.verified,
       type: 'refresh',
     });
 
-    const fcmTokens = await this.getUserFCMtokens(user);
-
     const refreshToken = this.sessionRepository.create({
       token,
       user,
       lastTimeOfUse: new Date(),
       ipAddress: ip,
+      deviceName,
     });
     const session = await this.sessionRepository.save(refreshToken);
+    const fcmTokens = await this.getUserFCMtokens(user);
     await this.firebaseService.sendBatchNotify(
       fcmTokens,
       'new-session',
@@ -165,14 +170,14 @@ export class AuthService {
     return session;
   }
 
-  async register(user: DeepPartial<User>, ip: string) {
+  async register(user: DeepPartial<User>, ip: string, deviceName: string) {
     const { password, ...restUser } = user;
     const hash = await bcrypt.hash(password, 10);
     const userCreated = await this.userService.createUser({
       password: hash,
       ...restUser,
     });
-    return this.login(userCreated, ip);
+    return this.login(userCreated, ip, deviceName);
   }
 
   async changePassword(user: User, password: string) {
@@ -276,7 +281,6 @@ export class AuthService {
       .where('RefreshToken.userId = :userId', { userId: user.id })
       .andWhere('RefreshToken.FCM is not null')
       .getMany();
-
     return refreshTokens
       .map((token) => token.FCM)
       .filter((fcm) => fcm != excludedToken);
