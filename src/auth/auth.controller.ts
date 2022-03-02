@@ -58,7 +58,7 @@ export class AuthController {
   async login(
     @Body() loginDto: LoginDto,
     @GetIp() ip: string,
-    @Headers('device-name') deviceName: string,
+    @Headers('device-name') deviceName = 'unknown',
   ) {
     return this.authService.validateLocal(loginDto, ip, deviceName);
   }
@@ -70,7 +70,7 @@ export class AuthController {
   async register(
     @Body() registerDTo: RegisterDto,
     @GetIp() ip: string,
-    @Headers('device-name') deviceName: string,
+    @Headers('device-name') deviceName = 'unknown',
   ) {
     return await this.authService.register(registerDTo, ip, deviceName);
   }
@@ -83,7 +83,7 @@ export class AuthController {
     @GetUser() user: User,
     @GetIp() ip: string,
     @GetRefreshToken() refreshToken: Session,
-    @Headers('device-name') deviceName: string,
+    @Headers('device-name') deviceName = 'unknown',
   ) {
     const updatedRefreshToken = await this.authService.updateRefreshToken(
       refreshToken,
