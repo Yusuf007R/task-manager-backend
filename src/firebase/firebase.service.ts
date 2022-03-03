@@ -26,7 +26,11 @@ export class FirebaseService {
     try {
       if (tokens.length === 0) return false;
       const payload: MulticastMessage = {
-        data: { type, ...extraData, sessionId: sessionId?.toString() },
+        data: {
+          type,
+          ...extraData,
+          sessionId: sessionId.toString() ?? 'undefined',
+        },
         tokens: filteredTokens,
         android: { priority: 'high' },
       };
