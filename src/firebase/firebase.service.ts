@@ -29,7 +29,7 @@ export class FirebaseService {
         data: {
           type,
           ...extraData,
-          sessionId: sessionId.toString() ?? 'undefined',
+          sessionId: sessionId ? sessionId.toString() : 'undefined',
         },
         tokens: filteredTokens,
         android: { priority: 'high' },
