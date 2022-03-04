@@ -180,11 +180,17 @@ export class AuthService {
     return this.login(userCreated, ip, deviceName);
   }
 
-  async changePassword(user: User, password: string) {
+  async changePassword(
+    user: User,
+    password: string,
+    shouldLogout = false,
+    excludedSessionId?: number,
+  ) {
     const hash = await bcrypt.hash(password, 10);
     user.password = hash;
     await this.userService.updateUserInstance(user);
-    return await this.logoutAll(user);
+    if (shouldLogout) await this.logoutAll(user, excludedSessionId);
+    return;
   }
 
   async logoutOne(token: string) {
@@ -194,11 +200,15 @@ export class AuthService {
     return await this.sessionRepository.remove(tokenDB);
   }
 
-  async logoutAll(user: User) {
+  async logoutAll(user: User, excludedSessionId?: number) {
     const tokenDB = await this.sessionRepository.find({ where: { user } });
     const removed = await this.sessionRepository.remove(tokenDB);
+    const excludedToken = tokenDB.find(
+      (element) => element.id === excludedSessionId,
+    ).FCM;
+
     await this.firebaseService.sendBatchNotify(
-      tokenDB.map((token) => token.FCM),
+      tokenDB.map((token) => token.FCM).filter((fcm) => fcm !== excludedToken),
       'logout',
     );
     return removed;

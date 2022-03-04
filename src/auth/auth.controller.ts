@@ -122,7 +122,7 @@ export class AuthController {
     @GetUser() user: User,
     @Body() body: changeForgotPasswordDto,
   ) {
-    await this.authService.changePassword(user, body.password);
+    await this.authService.changePassword(user, body.password, true);
     return {
       message: 'Password changed, and All tokens revoked',
     };
@@ -130,11 +130,23 @@ export class AuthController {
 
   @ApiResponse({ type: MessageResponseDto })
   @Post('change-password')
-  async changePassword(@GetUser() user: User, @Body() body: ChangePasswordDto) {
+  async changePassword(
+    @GetUser() user: User,
+    @Body() body: ChangePasswordDto,
+    @GetJwt() jwtToken: string,
+  ) {
+    const tokenPayload = this.authService.getJwtPayload(jwtToken, 'access');
+    if (typeof tokenPayload === 'string')
+      throw new InternalServerErrorException();
     await this.authService.validatePassword(user, body.password);
-    await this.authService.changePassword(user, body.newPassword);
+    await this.authService.changePassword(
+      user,
+      body.newPassword,
+      true,
+      tokenPayload.sessionId,
+    );
     return {
-      message: 'Password changed, and All tokens revoked',
+      message: 'Password changed',
     };
   }
 

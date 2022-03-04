@@ -12,6 +12,7 @@ export class FirebaseService {
     const firebaseKey = configService.get('FIREBASE_KEY');
     const firebaseJson = Buffer.from(firebaseKey, 'base64').toString();
     this.firebaseApp = admin.initializeApp({
+      storageBucket: 'test',
       credential: admin.credential.cert(JSON.parse(firebaseJson)),
     });
   }
