@@ -203,12 +203,17 @@ export class AuthService {
   async logoutAll(user: User, excludedSessionId?: number) {
     const tokenDB = await this.sessionRepository.find({ where: { user } });
     const removed = await this.sessionRepository.remove(tokenDB);
-    const excludedToken = tokenDB.find(
+    const excludedSession = tokenDB.find(
       (element) => element.id === excludedSessionId,
-    ).FCM;
+    );
 
     await this.firebaseService.sendBatchNotify(
-      tokenDB.map((token) => token.FCM).filter((fcm) => fcm !== excludedToken),
+      tokenDB
+        .map((token) => token.FCM)
+        .filter((fcm) => {
+          if (excludedSession) return fcm !== excludedSession.FCM;
+          return true;
+        }),
       'logout',
     );
     return removed;
