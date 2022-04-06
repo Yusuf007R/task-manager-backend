@@ -97,7 +97,7 @@ export class AuthService {
       where: { ipAddress: ip },
       relations: ['geoLocation'],
     });
-    const geolocationDB = session.geoLocation;
+    const geolocationDB = session?.geoLocation;
 
     if (!geolocationDB) {
       try {
