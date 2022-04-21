@@ -11,7 +11,7 @@ import * as bcrypt from 'bcrypt';
 
 import { User } from 'src/user/entity/user.entity';
 import { JwtService } from '@nestjs/jwt';
-import { DeepPartial, MoreThan, Repository } from 'typeorm';
+import { DeepPartial, MoreThan, Not, Repository } from 'typeorm';
 import LoginDto from './dto/login.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Session } from './entity/session.entity';
@@ -201,22 +201,12 @@ export class AuthService {
   }
 
   async logoutAll(user: User, excludedSessionId?: number) {
-    const tokenDB = await this.sessionRepository.find({ where: { user } });
-
-    const excludedSession = tokenDB.find(
-      (element) => element.id === excludedSessionId,
-    );
-    console.log(excludedSession);
-    const tokens = tokenDB
-      .filter((element) => element.id != excludedSessionId)
-      .map((token) => token.FCM)
-      .filter((fcm) => {
-        if (excludedSession) return fcm !== excludedSession.FCM;
-        return true;
-      });
-    console.log(tokens);
-    await this.firebaseService.sendBatchNotify(tokens, 'logout');
+    const tokenDB = await this.sessionRepository.find({
+      where: [{ user }, { id: Not(excludedSessionId ?? '') }],
+    });
     const removed = await this.sessionRepository.remove(tokenDB);
+    const tokens = tokenDB.map((token) => token.FCM);
+    await this.firebaseService.sendBatchNotify(tokens, 'logout');
     return removed;
   }
 
