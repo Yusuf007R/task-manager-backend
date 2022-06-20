@@ -1,4 +1,4 @@
-FROM arm64v8/node:16-alpine
+FROM arm64v8/node:16
 WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
@@ -7,7 +7,7 @@ COPY . .
 RUN yarn build
 
 
-FROM arm64v8/node:16-alpine
+FROM arm64v8/node:16
 WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
