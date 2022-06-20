@@ -24,14 +24,13 @@ jobs:
           context: .
           push: true
           tags: yusuf007r/task-manager:latest
-      - name: executing remote ssh commands using password
-        uses: appleboy/ssh-action@master
+      - name: executing remote ssh commands
+        uses: fifsky/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ubuntu
+          user: ubuntu
           key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
+          command: |
             cd task-manager-backend
             sudo docker-compose pull
             sudo docker-compose up -d
