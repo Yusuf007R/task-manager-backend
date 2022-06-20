@@ -204,7 +204,9 @@ export class AuthService {
     const userSessions = await this.sessionRepository.find({
       where: { user },
     });
-    const filteredUserSessions = userSessions.filter(element=>element.id != excludedSessionId)
+    const filteredUserSessions = userSessions.filter(
+      (element) => element.id != excludedSessionId,
+    );
     const removed = await this.sessionRepository.remove(filteredUserSessions);
     const tokens = filteredUserSessions.map((token) => token.FCM);
     await this.firebaseService.sendBatchNotify(tokens, 'logout');

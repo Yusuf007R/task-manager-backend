@@ -1,4 +1,4 @@
-FROM node:alpine
+FROM arm64v8/node:16-alpine
 WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
@@ -7,7 +7,7 @@ COPY . .
 RUN yarn build
 
 
-FROM node:alpine
+FROM arm64v8/node:16-alpine
 WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
@@ -15,7 +15,7 @@ RUN yarn install --production
 COPY --from=0 /app/dist ./dist
 
 
-FROM mhart/alpine-node:slim
+FROM arm64v8/node:16-alpine
 WORKDIR /app
 COPY --from=1 /app .
 EXPOSE 3000
